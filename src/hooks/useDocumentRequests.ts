@@ -43,7 +43,7 @@ export const useDocumentRequests = () => {
       return apiService.put(`/document-requests/${requestId}/status`, { status });
     },
     onSuccess: () => {
-      queryClient.invalidateQuests({ queryKey: ['documentRequests'] });
+      queryClient.invalidateQueries({ queryKey: ['documentRequests'] });
       toast.success('Status updated');
     }
   });
