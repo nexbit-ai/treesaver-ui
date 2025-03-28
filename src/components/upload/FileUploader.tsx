@@ -31,12 +31,14 @@ interface FileUploaderProps {
   requestId: string;
   className?: string;
   isUploading?: boolean;
+  readOnly?: boolean;
 }
 
 const FileUploader: React.FC<FileUploaderProps> = ({ 
   onFilesSelected, 
   requestId,
   isUploading = false,
+  readOnly = false,
   className 
 }) => {
   const [isDragging, setIsDragging] = useState(false);
@@ -93,7 +95,7 @@ const FileUploader: React.FC<FileUploaderProps> = ({
   };
   
   const processFiles = (files: FileList | null) => {
-    if (!files) return;
+    if (!files || readOnly) return;
     
     const newValidFiles = validateFiles(Array.from(files));
     if (newValidFiles.length > 0) {
@@ -107,28 +109,34 @@ const FileUploader: React.FC<FileUploaderProps> = ({
   const handleDrop = (e: React.DragEvent<HTMLDivElement>) => {
     e.preventDefault();
     setIsDragging(false);
-    processFiles(e.dataTransfer.files);
+    if (!readOnly) {
+      processFiles(e.dataTransfer.files);
+    }
   };
   
   const handleFileInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    processFiles(e.target.files);
-    // Clear the input value to allow selecting the same file again
-    if (fileInputRef.current) {
-      fileInputRef.current.value = '';
+    if (!readOnly) {
+      processFiles(e.target.files);
+      // Clear the input value to allow selecting the same file again
+      if (fileInputRef.current) {
+        fileInputRef.current.value = '';
+      }
     }
   };
   
   const handleButtonClick = () => {
-    if (fileInputRef.current) {
+    if (fileInputRef.current && !readOnly) {
       fileInputRef.current.click();
     }
   };
   
   const removeFile = (index: number) => {
-    const newFiles = [...selectedFiles];
-    newFiles.splice(index, 1);
-    setSelectedFiles(newFiles);
-    onFilesSelected(newFiles);
+    if (!readOnly) {
+      const newFiles = [...selectedFiles];
+      newFiles.splice(index, 1);
+      setSelectedFiles(newFiles);
+      onFilesSelected(newFiles);
+    }
   };
 
   const getFileTypeLabel = (file: File) => {
@@ -140,6 +148,19 @@ const FileUploader: React.FC<FileUploaderProps> = ({
     if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
     return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
   };
+
+  // If in readOnly mode, don't show the upload interface
+  if (readOnly) {
+    return (
+      <div className={cn('space-y-4', className)}>
+        {/* Show only uploaded files in read-only mode */}
+        <div className="text-center py-6 bg-muted/20 rounded-lg border">
+          <FileIcon className="h-10 w-10 mx-auto text-muted-foreground mb-2" />
+          <p className="text-muted-foreground">View document details above</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className={cn('space-y-4', className)}>
@@ -162,6 +183,7 @@ const FileUploader: React.FC<FileUploaderProps> = ({
           accept=".pdf,.jpg,.jpeg,.png,.xlsx"
           onChange={handleFileInputChange}
           aria-label="File upload"
+          disabled={readOnly}
         />
         
         <div className={cn(
@@ -184,6 +206,7 @@ const FileUploader: React.FC<FileUploaderProps> = ({
         <Button 
           variant="outline" 
           className="group hover:bg-primary hover:text-primary-foreground transition-all"
+          disabled={readOnly}
         >
           <Upload className="mr-2 h-4 w-4 group-hover:scale-110 transition-all" />
           Select Files
@@ -194,7 +217,7 @@ const FileUploader: React.FC<FileUploaderProps> = ({
         <div className="space-y-3 animate-fade-in">
           <div className="text-sm font-medium flex justify-between items-center">
             <span>Selected Files ({selectedFiles.length})</span>
-            {selectedFiles.length > 0 && (
+            {selectedFiles.length > 0 && !readOnly && (
               <Button 
                 variant="ghost" 
                 size="sm" 
@@ -233,26 +256,28 @@ const FileUploader: React.FC<FileUploaderProps> = ({
                     </div>
                   </div>
                 </div>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="h-8 w-8 rounded-full hover:bg-destructive/10 hover:text-destructive"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    removeFile(index);
-                  }}
-                  disabled={isUploading}
-                >
-                  <X className="h-4 w-4" />
-                  <span className="sr-only">Remove file</span>
-                </Button>
+                {!readOnly && (
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-8 w-8 rounded-full hover:bg-destructive/10 hover:text-destructive"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      removeFile(index);
+                    }}
+                    disabled={isUploading}
+                  >
+                    <X className="h-4 w-4" />
+                    <span className="sr-only">Remove file</span>
+                  </Button>
+                )}
               </div>
             ))}
           </div>
           
           <Button 
             className="w-full mt-4 transition-all hover:shadow-md"
-            disabled={selectedFiles.length === 0 || isUploading}
+            disabled={selectedFiles.length === 0 || isUploading || readOnly}
             onClick={() => onFilesSelected(selectedFiles)}
           >
             {isUploading ? (
