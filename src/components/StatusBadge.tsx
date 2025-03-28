@@ -2,7 +2,7 @@
 import React from 'react';
 import { cn } from '@/lib/utils';
 
-export type StatusType = 'pending' | 'uploaded' | 'review' | 'approved' | 'rejected';
+export type StatusType = 'pending' | 'seen' | 'review' | 'approved' | 'rejected';
 
 interface StatusBadgeProps {
   status: StatusType;
@@ -14,9 +14,9 @@ const statusConfig = {
     color: 'bg-status-pending/20 text-status-pending border-status-pending/30',
     label: 'Pending'
   },
-  uploaded: {
-    color: 'bg-status-uploaded/20 text-status-uploaded border-status-uploaded/30',
-    label: 'Uploaded'
+  seen: {
+    color: 'bg-blue-100 text-blue-600 border-blue-200',
+    label: 'Seen'
   },
   review: {
     color: 'bg-status-review/20 text-status-review border-status-review/30',

@@ -2,7 +2,7 @@
 // Central file for type definitions
 
 // Document request statuses
-export type StatusType = 'pending' | 'uploaded' | 'review' | 'approved' | 'rejected';
+export type StatusType = 'pending' | 'seen' | 'review' | 'approved' | 'rejected';
 
 // File metadata
 export interface FileMetadata {
