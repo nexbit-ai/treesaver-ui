@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { documentRequests } from '@/data/mockData';
 import { Button } from '@/components/ui/button';
@@ -43,6 +44,12 @@ const Dashboard = () => {
     }
   };
 
+  // Create a handler function that ensures correct typing
+  const handleTabChange = (value: string) => {
+    // Type assertion to ensure value is treated as 'all' | StatusType
+    setActiveTab(value as 'all' | StatusType);
+  };
+
   return (
     <div className="min-h-screen bg-background flex flex-col">
       <header className="sticky top-0 z-10 bg-background/80 backdrop-blur-lg border-b">
@@ -62,7 +69,7 @@ const Dashboard = () => {
         <div className="mb-8">
           <h2 className="text-lg font-medium mb-4">Document Requests</h2>
           
-          <Tabs defaultValue="all" value={activeTab} onValueChange={setActiveTab}>
+          <Tabs defaultValue="all" value={activeTab} onValueChange={handleTabChange}>
             <TabsList className="grid grid-cols-3 md:grid-cols-6 mb-6">
               <TabsTrigger value="all" className="flex items-center justify-center gap-1.5">
                 All
