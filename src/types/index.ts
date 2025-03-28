@@ -1,64 +1,45 @@
-
-// Central file for type definitions
-
-// Document request statuses
+// Existing types
 export type StatusType = 'pending' | 'seen' | 'review' | 'approved' | 'rejected';
 
-// File metadata
-export interface FileMetadata {
+export interface UploadedFile {
   id: string;
   name: string;
   size: number;
-  type: string;
   uploadedAt: string;
-  url?: string;
+  url: string;
 }
 
-// Document request interface
 export interface DocumentRequest {
   id: string;
   title: string;
   description: string;
-  status: StatusType;
-  requiredFiles: string[];
   dueDate: string;
+  status: StatusType;
   createdAt: string;
-  uploadedFiles?: FileMetadata[];
-  clientId?: string;
-  auditorId?: string;
+  updatedAt: string;
+  clientId: string;
+  auditId: string;
+  requiredFiles: string[];
+  uploadedFiles?: UploadedFile[];
 }
 
-// User roles
-export type UserRole = 'client' | 'auditor' | 'admin';
-
-// User interface
-export interface User {
+// New types
+export interface Client {
   id: string;
   name: string;
   email: string;
-  role: UserRole;
-  companyId?: string;
+  companyName: string;
+  industry: string;
+  contactPerson: string;
 }
 
-// Comment interface
-export interface Comment {
-  id: string;
-  requestId: string;
-  userId: string;
-  userName: string;
-  text: string;
-  createdAt: string;
-}
-
-// Audit interface
 export interface Audit {
   id: string;
   name: string;
-  description?: string;
   clientId: string;
-  auditorId: string;
+  status: 'planned' | 'in-progress' | 'completed';
   startDate: string;
   endDate: string;
-  status: 'pending' | 'in-progress' | 'completed';
-  requests: DocumentRequest[];
+  fiscalYear: string;
+  description?: string;
 }
