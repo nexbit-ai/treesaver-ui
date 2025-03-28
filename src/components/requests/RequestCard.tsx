@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { DocumentRequest } from '@/types';
 import StatusBadge from '@/components/ui/status-badge';
-import { Upload, Calendar, FileIcon, Clock } from 'lucide-react';
+import { CheckCircle, Upload, Calendar, FileIcon, Clock, AlertCircle } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import FileUploader from '@/components/upload/FileUploader';
 import { format } from 'date-fns';
@@ -14,15 +14,24 @@ import { useDocumentRequests } from '@/hooks/useDocumentRequests';
 interface RequestCardProps {
   request: DocumentRequest;
   className?: string;
+  showApproveReject?: boolean;
 }
 
-const RequestCard: React.FC<RequestCardProps> = ({ request, className }) => {
+const RequestCard: React.FC<RequestCardProps> = ({ request, className, showApproveReject = false }) => {
   const [isDialogOpen, setIsDialogOpen] = React.useState(false);
-  const { uploadFiles, isUploading } = useDocumentRequests();
+  const { uploadFiles, isUploading, updateStatus } = useDocumentRequests();
   
   const handleFilesSelected = (files: File[]) => {
     uploadFiles({ requestId: request.id, files });
     setIsDialogOpen(false);
+  };
+
+  const handleApprove = () => {
+    updateStatus({ requestId: request.id, status: 'approved' });
+  };
+
+  const handleReject = () => {
+    updateStatus({ requestId: request.id, status: 'rejected' });
   };
   
   const formatDate = (dateString: string) => {
@@ -97,24 +106,51 @@ const RequestCard: React.FC<RequestCardProps> = ({ request, className }) => {
         )}
       </CardContent>
       <CardFooter className="pt-2">
-        <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-          <DialogTrigger asChild>
-            <Button className="w-full" disabled={request.status === 'approved'}>
-              <Upload className="h-4 w-4 mr-2" />
-              Upload Documents
+        {showApproveReject && request.status === 'review' ? (
+          <div className="flex gap-2 w-full">
+            <Button 
+              variant="outline" 
+              className="flex-1" 
+              onClick={handleReject}
+            >
+              <AlertCircle className="h-4 w-4 mr-2" />
+              Reject
             </Button>
-          </DialogTrigger>
-          <DialogContent className="max-w-xl">
-            <DialogHeader>
-              <DialogTitle>{request.title}</DialogTitle>
-            </DialogHeader>
-            <FileUploader 
-              onFilesSelected={handleFilesSelected} 
-              requestId={request.id}
-              isUploading={isUploading}
-            />
-          </DialogContent>
-        </Dialog>
+            <Button 
+              className="flex-1" 
+              onClick={handleApprove}
+            >
+              <CheckCircle className="h-4 w-4 mr-2" />
+              Approve
+            </Button>
+          </div>
+        ) : (
+          <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+            <DialogTrigger asChild>
+              <Button 
+                className="w-full" 
+                disabled={
+                  request.status === 'approved' || 
+                  (showApproveReject && request.status !== 'pending')
+                }
+              >
+                <Upload className="h-4 w-4 mr-2" />
+                {showApproveReject ? 'View Documents' : 'Upload Documents'}
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="max-w-xl">
+              <DialogHeader>
+                <DialogTitle>{request.title}</DialogTitle>
+              </DialogHeader>
+              <FileUploader 
+                onFilesSelected={handleFilesSelected} 
+                requestId={request.id}
+                isUploading={isUploading}
+                readOnly={showApproveReject}
+              />
+            </DialogContent>
+          </Dialog>
+        )}
       </CardFooter>
     </Card>
   );
