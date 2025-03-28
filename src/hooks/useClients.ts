@@ -12,10 +12,10 @@ export const useClients = () => {
     error 
   } = useQuery({
     queryKey: ['clients'],
-    queryFn: () => {
+    queryFn: async () => {
       // Eventually replace with API call
       // return apiService.get<Client[]>('/clients');
-      return Promise.resolve(mockClients);
+      return mockClients;
     },
   });
 

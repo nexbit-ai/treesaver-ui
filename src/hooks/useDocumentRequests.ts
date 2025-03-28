@@ -3,18 +3,23 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { DocumentRequest, StatusType } from '@/types';
 import { apiService } from '@/services/api';
 import { toast } from 'sonner';
+import { documentRequests as mockRequests } from '@/data/mockData';
 
 export const useDocumentRequests = () => {
   const queryClient = useQueryClient();
 
   // Get all requests
   const { 
-    data: requests = [], 
+    data: requests = mockRequests, 
     isLoading, 
     error 
   } = useQuery({
     queryKey: ['documentRequests'],
-    queryFn: () => apiService.get<DocumentRequest[]>('/document-requests'),
+    queryFn: async () => {
+      // In a real app, this would be:
+      // return apiService.get<DocumentRequest[]>('/document-requests');
+      return mockRequests;
+    },
   });
 
   // Filter requests by status
