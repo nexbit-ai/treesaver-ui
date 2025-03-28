@@ -43,3 +43,13 @@ export interface Audit {
   fiscalYear: string;
   description?: string;
 }
+
+// Added User type definition
+export interface User {
+  id: string;
+  name: string;
+  email: string;
+  role: 'cpa' | 'client';
+  clientId?: string; // For client users
+  organization?: string;
+}
