@@ -10,7 +10,7 @@ export const useDocumentRequests = () => {
 
   // Get all requests
   const { 
-    data: requests = mockRequests, 
+    data: requests = mockRequests as DocumentRequest[], 
     isLoading, 
     error 
   } = useQuery({
@@ -18,7 +18,7 @@ export const useDocumentRequests = () => {
     queryFn: async () => {
       // In a real app, this would be:
       // return apiService.get<DocumentRequest[]>('/document-requests');
-      return mockRequests;
+      return mockRequests as DocumentRequest[];
     },
   });
 

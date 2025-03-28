@@ -1,6 +1,8 @@
 
 import { StatusType } from '@/types';
 
+// Using this interface for backward compatibility
+// but it should match the one in /src/types/index.ts
 export interface DocumentRequest {
   id: string;
   title: string;
@@ -9,10 +11,15 @@ export interface DocumentRequest {
   status: StatusType;
   dueDate: string;
   createdAt: string;
+  updatedAt: string; // Added to match type in index.ts
+  clientId: string;  // Added to match type in index.ts
+  auditId: string;   // Added to match type in index.ts
   uploadedFiles?: {
+    id?: string;     // Added to match UploadedFile in index.ts
     name: string;
     size: number;
     uploadedAt: string;
+    url?: string;    // Added to match UploadedFile in index.ts
   }[];
 }
 
@@ -25,6 +32,9 @@ export const documentRequests: DocumentRequest[] = [
     status: 'pending',
     dueDate: '2023-12-15',
     createdAt: '2023-11-30',
+    updatedAt: '2023-11-30',
+    clientId: 'client1',
+    auditId: 'audit1',
   },
   {
     id: '2',
@@ -34,16 +44,23 @@ export const documentRequests: DocumentRequest[] = [
     status: 'seen',
     dueDate: '2023-12-10',
     createdAt: '2023-11-25',
+    updatedAt: '2023-11-25',
+    clientId: 'client1',
+    auditId: 'audit1',
     uploadedFiles: [
       { 
+        id: 'file1',
         name: 'Tax_Return_2022.pdf', 
         size: 1024 * 1024 * 2.1, 
-        uploadedAt: '2023-12-01' 
+        uploadedAt: '2023-12-01',
+        url: '/files/tax_return_2022.pdf'
       },
       { 
+        id: 'file2',
         name: 'W2_Forms_2022.pdf', 
         size: 1024 * 512, 
-        uploadedAt: '2023-12-01' 
+        uploadedAt: '2023-12-01',
+        url: '/files/w2_forms_2022.pdf'
       }
     ]
   },
@@ -55,21 +72,30 @@ export const documentRequests: DocumentRequest[] = [
     status: 'review',
     dueDate: '2023-12-20',
     createdAt: '2023-11-28',
+    updatedAt: '2023-11-28',
+    clientId: 'client2',
+    auditId: 'audit3',
     uploadedFiles: [
       { 
+        id: 'file3',
         name: 'Business_Plan_2023.pdf', 
         size: 1024 * 1024 * 3.7, 
-        uploadedAt: '2023-12-02' 
+        uploadedAt: '2023-12-02',
+        url: '/files/business_plan_2023.pdf'
       },
       { 
+        id: 'file4',
         name: 'Financial_Projections.xlsx', 
         size: 1024 * 1024 * 1.2, 
-        uploadedAt: '2023-12-02' 
+        uploadedAt: '2023-12-02',
+        url: '/files/financial_projections.xlsx'
       },
       { 
+        id: 'file5',
         name: 'Market_Analysis.pdf', 
         size: 1024 * 1024 * 2.5, 
-        uploadedAt: '2023-12-02' 
+        uploadedAt: '2023-12-02',
+        url: '/files/market_analysis.pdf'
       }
     ]
   },
@@ -81,16 +107,23 @@ export const documentRequests: DocumentRequest[] = [
     status: 'approved',
     dueDate: '2023-12-05',
     createdAt: '2023-11-20',
+    updatedAt: '2023-11-20',
+    clientId: 'client2',
+    auditId: 'audit3',
     uploadedFiles: [
       { 
+        id: 'file6',
         name: 'ID_Documents_Combined.pdf', 
         size: 1024 * 1024 * 1.8, 
-        uploadedAt: '2023-11-25' 
+        uploadedAt: '2023-11-25',
+        url: '/files/id_documents.pdf'
       },
       { 
+        id: 'file7',
         name: 'Proof_of_Address.pdf', 
         size: 1024 * 768, 
-        uploadedAt: '2023-11-25' 
+        uploadedAt: '2023-11-25',
+        url: '/files/proof_of_address.pdf'
       }
     ]
   },
@@ -102,11 +135,16 @@ export const documentRequests: DocumentRequest[] = [
     status: 'rejected',
     dueDate: '2023-12-12',
     createdAt: '2023-11-22',
+    updatedAt: '2023-11-22',
+    clientId: 'client1',
+    auditId: 'audit2',
     uploadedFiles: [
       { 
+        id: 'file8',
         name: 'Annual_Report_Draft.pdf', 
         size: 1024 * 1024 * 4.2, 
-        uploadedAt: '2023-11-30' 
+        uploadedAt: '2023-11-30',
+        url: '/files/annual_report_draft.pdf'
       }
     ]
   },
@@ -118,6 +156,9 @@ export const documentRequests: DocumentRequest[] = [
     status: 'pending',
     dueDate: '2023-12-18',
     createdAt: '2023-12-01',
+    updatedAt: '2023-12-01',
+    clientId: 'client3',
+    auditId: 'audit4',
   },
   {
     id: '7',
@@ -127,5 +168,8 @@ export const documentRequests: DocumentRequest[] = [
     status: 'pending',
     dueDate: '2023-12-25',
     createdAt: '2023-12-02',
+    updatedAt: '2023-12-02',
+    clientId: 'client3',
+    auditId: 'audit4',
   }
 ];
