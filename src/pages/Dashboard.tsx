@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { documentRequests } from '@/data/mockData';
 import { Button } from '@/components/ui/button';
@@ -7,10 +6,11 @@ import { Separator } from '@/components/ui/separator';
 import { useIsMobile } from '@/hooks/use-mobile';
 import RequestTable from '@/components/RequestTable';
 import RequestCard from '@/components/RequestCard';
-import { Upload, Clock, CheckCircle, AlertCircle, Loader2 } from 'lucide-react';
+import { Upload, Clock, CheckCircle, AlertCircle, Loader2, Eye } from 'lucide-react';
+import { StatusType } from '@/types';
 
 const Dashboard = () => {
-  const [activeTab, setActiveTab] = useState('all');
+  const [activeTab, setActiveTab] = useState<'all' | StatusType>('all');
   const isMobile = useIsMobile();
   
   const filteredRequests = activeTab === 'all' 
@@ -20,7 +20,7 @@ const Dashboard = () => {
   const statusCounts = {
     all: documentRequests.length,
     pending: documentRequests.filter(req => req.status === 'pending').length,
-    uploaded: documentRequests.filter(req => req.status === 'uploaded').length,
+    seen: documentRequests.filter(req => req.status === 'seen').length,
     review: documentRequests.filter(req => req.status === 'review').length,
     approved: documentRequests.filter(req => req.status === 'approved').length,
     rejected: documentRequests.filter(req => req.status === 'rejected').length,
@@ -30,8 +30,8 @@ const Dashboard = () => {
     switch (status) {
       case 'pending':
         return <Clock className="h-4 w-4" />;
-      case 'uploaded':
-        return <Upload className="h-4 w-4" />;
+      case 'seen':
+        return <Eye className="h-4 w-4" />;
       case 'review':
         return <Loader2 className="h-4 w-4 animate-spin" />;
       case 'approved':
@@ -77,11 +77,11 @@ const Dashboard = () => {
                   {statusCounts.pending}
                 </span>
               </TabsTrigger>
-              <TabsTrigger value="uploaded" className="flex items-center justify-center gap-1.5">
-                <Upload className="h-3.5 w-3.5 mr-1 opacity-70" />
-                Uploaded
+              <TabsTrigger value="seen" className="flex items-center justify-center gap-1.5">
+                <Eye className="h-3.5 w-3.5 mr-1 opacity-70" />
+                Seen
                 <span className="text-xs bg-muted rounded-full px-2 py-0.5">
-                  {statusCounts.uploaded}
+                  {statusCounts.seen}
                 </span>
               </TabsTrigger>
               <TabsTrigger value="review" className="flex items-center justify-center gap-1.5">

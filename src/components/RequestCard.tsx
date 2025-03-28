@@ -4,7 +4,7 @@ import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { DocumentRequest } from '@/data/mockData';
-import StatusBadge from './StatusBadge';
+import StatusBadge from '@/components/ui/status-badge';
 import { Upload, Calendar, FileIcon, Clock } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import FileUploader from './FileUploader';

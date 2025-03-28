@@ -11,7 +11,7 @@ import {
   TableRow 
 } from '@/components/ui/table';
 import { DocumentRequest } from '@/data/mockData';
-import StatusBadge from './StatusBadge';
+import StatusBadge from '@/components/ui/status-badge';
 import { Upload, ChevronDown, ChevronUp, Calendar, FileIcon, Clock } from 'lucide-react';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import FileUploader from './FileUploader';

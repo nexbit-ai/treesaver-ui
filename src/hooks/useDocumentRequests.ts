@@ -1,6 +1,6 @@
 
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { DocumentRequest } from '@/types';
+import { DocumentRequest, StatusType } from '@/types';
 import { apiService } from '@/services/api';
 import { toast } from 'sonner';
 
