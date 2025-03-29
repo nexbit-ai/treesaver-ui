@@ -28,16 +28,6 @@ export const useDocumentRequests = () => {
     return requests.filter(req => req.status === status);
   };
 
-  // Mark request as seen (for clients)
-  const markAsSeenMutation = useMutation({
-    mutationFn: (requestId: string) => {
-      return apiService.put(`/document-requests/${requestId}/status`, { status: 'seen' });
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['documentRequests'] });
-    }
-  });
-
   // Upload files mutation
   const uploadFilesMutation = useMutation({
     mutationFn: ({ requestId, files }: { requestId: string, files: File[] }) => {
@@ -68,7 +58,6 @@ export const useDocumentRequests = () => {
     isLoading,
     error,
     getRequestsByStatus,
-    markAsSeen: markAsSeenMutation.mutate,
     uploadFiles: uploadFilesMutation.mutate,
     isUploading: uploadFilesMutation.isPending,
     updateStatus: updateStatusMutation.mutate

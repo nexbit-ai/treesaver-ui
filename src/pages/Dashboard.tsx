@@ -21,7 +21,6 @@ const Dashboard = () => {
   const statusCounts = {
     all: documentRequests.length,
     pending: documentRequests.filter(req => req.status === 'pending').length,
-    seen: documentRequests.filter(req => req.status === 'seen').length,
     review: documentRequests.filter(req => req.status === 'review').length,
     approved: documentRequests.filter(req => req.status === 'approved').length,
     rejected: documentRequests.filter(req => req.status === 'rejected').length,
@@ -31,8 +30,6 @@ const Dashboard = () => {
     switch (status) {
       case 'pending':
         return <Clock className="h-4 w-4" />;
-      case 'seen':
-        return <Eye className="h-4 w-4" />;
       case 'review':
         return <Loader2 className="h-4 w-4 animate-spin" />;
       case 'approved':
