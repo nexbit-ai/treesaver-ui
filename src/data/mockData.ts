@@ -41,7 +41,7 @@ export const documentRequests: DocumentRequest[] = [
     title: 'Tax Documents',
     description: 'We need your latest tax returns for the previous fiscal year.',
     requiredFiles: ['Tax Return', 'W-2 Forms', 'Additional Schedules'],
-    status: 'seen',
+    status: 'rejected',
     dueDate: '2023-12-10',
     createdAt: '2023-11-25',
     updatedAt: '2023-11-25',

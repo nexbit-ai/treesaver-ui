@@ -13,10 +13,6 @@ const statusConfig = {
     color: 'bg-status-pending/20 text-status-pending border-status-pending/30',
     label: 'Pending'
   },
-  seen: {
-    color: 'bg-blue-100 text-blue-600 border-blue-200',
-    label: 'Seen'
-  },
   review: {
     color: 'bg-status-review/20 text-status-review border-status-review/30',
     label: 'In Review'
@@ -39,7 +35,7 @@ const StatusBadge: React.FC<StatusBadgeProps> = ({ status, className }) => {
       className={cn(
         'inline-flex items-center px-3 py-1 rounded-full text-xs font-medium border transition-all duration-300',
         color,
-        status === 'review' && 'animate-pulse-subtle',
+        status === 'rejected' && 'animate-pulse-subtle',
         className
       )}
       aria-label={`Status: ${label}`}

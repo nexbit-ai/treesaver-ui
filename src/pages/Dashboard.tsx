@@ -84,13 +84,13 @@ const Dashboard = () => {
                   {statusCounts.pending}
                 </span>
               </TabsTrigger>
-              <TabsTrigger value="seen" className="flex items-center justify-center gap-1.5">
+              {/* <TabsTrigger value="seen" className="flex items-center justify-center gap-1.5">
                 <Eye className="h-3.5 w-3.5 mr-1 opacity-70" />
                 Seen
                 <span className="text-xs bg-muted rounded-full px-2 py-0.5">
                   {statusCounts.seen}
                 </span>
-              </TabsTrigger>
+              </TabsTrigger> */}
               <TabsTrigger value="review" className="flex items-center justify-center gap-1.5">
                 <Loader2 className="h-3.5 w-3.5 mr-1 opacity-70" />
                 In Review

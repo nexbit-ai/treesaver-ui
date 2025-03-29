@@ -1,5 +1,5 @@
 // Existing types
-export type StatusType = 'pending' | 'seen' | 'review' | 'approved' | 'rejected';
+export type StatusType = 'pending' | 'review' | 'approved' | 'rejected';
 
 export interface UploadedFile {
   id: string;
