@@ -35,7 +35,7 @@ const StatusBadge: React.FC<StatusBadgeProps> = ({ status, className }) => {
       className={cn(
         'inline-flex items-center px-3 py-1 rounded-full text-xs font-medium border transition-all duration-300',
         color,
-        status === 'rejected' && 'animate-pulse-subtle',
+        status === 'rejected' && 'animate-pulse-subtle', // Changed from 'review' to 'rejected'
         className
       )}
       aria-label={`Status: ${label}`}

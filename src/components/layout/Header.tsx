@@ -4,7 +4,6 @@ import { Link } from 'react-router-dom';
 import { Button } from "@/components/ui/button";
 import { useAuth } from '@/contexts/AuthContext';
 import { 
-  Upload, 
   LogOut,
   User
 } from 'lucide-react';
@@ -24,27 +23,18 @@ const Header: React.FC = () => {
         
         <div className="flex items-center gap-4">
           {isAuthenticated ? (
-            <>
-              <Button asChild variant="outline">
-                <Link to="/new-upload">
-                  <Upload className="h-4 w-4 mr-2" />
-                  New Upload
-                </Link>
+            <div className="flex items-center gap-2 text-sm">
+              <span className="hidden md:inline-block">Welcome, {user?.name}</span>
+              <Button 
+                variant="ghost" 
+                size="icon"
+                className="rounded-full"
+                onClick={() => logout()}
+              >
+                <LogOut className="h-4 w-4" />
+                <span className="sr-only">Logout</span>
               </Button>
-              
-              <div className="flex items-center gap-2 text-sm">
-                <span className="hidden md:inline-block">Welcome, {user?.name}</span>
-                <Button 
-                  variant="ghost" 
-                  size="icon"
-                  className="rounded-full"
-                  onClick={() => logout()}
-                >
-                  <LogOut className="h-4 w-4" />
-                  <span className="sr-only">Logout</span>
-                </Button>
-              </div>
-            </>
+            </div>
           ) : (
             <Button asChild>
               <Link to="/login">

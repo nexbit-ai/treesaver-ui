@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogClose } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
@@ -18,16 +17,16 @@ import { toast } from 'sonner';
 
 const requestFormSchema = z.object({
   title: z.string().min(3, { message: 'Request title is required' }),
-  description: z.string().min(10, { message: 'Request description is required' }),
+  description: z.string().optional(),
   dueDate: z.string().min(1, { message: 'Due date is required' }),
   clientId: z.string().min(1, { message: 'Client is required' }),
   auditId: z.string().min(1, { message: 'Audit is required' }),
   requiredFiles: z.array(
     z.object({
-      name: z.string().min(1, { message: 'File name is required' }),
+      name: z.string().optional(),
       description: z.string().optional(),
     })
-  ).min(1, { message: 'At least one required file must be specified' })
+  ).optional().default([])
 });
 
 type RequestFormValues = z.infer<typeof requestFormSchema>;
@@ -68,18 +67,15 @@ const CreateRequestDialog: React.FC<CreateRequestDialogProps> = ({
     name: "requiredFiles"
   });
 
-  // Handle client change to filter audits
   const handleClientChange = (clientId: string) => {
     form.setValue('clientId', clientId);
-    form.setValue('auditId', ''); // Reset audit selection
-    
+    form.setValue('auditId', '');
     const clientAudits = getAuditsByClientId(clientId);
     setFilteredAudits(clientAudits);
   };
 
   const onSubmit = (data: RequestFormValues) => {
     console.log('Creating request:', data);
-    // Here we would typically call the API to create the request
     toast.success("Document request created successfully");
     onOpenChange(false);
     form.reset();
@@ -91,7 +87,7 @@ const CreateRequestDialog: React.FC<CreateRequestDialogProps> = ({
         <DialogHeader>
           <DialogTitle>Create New Document Request</DialogTitle>
           <DialogDescription>
-            Create a new document request for your client with multiple required files.
+            Create a new document request for your client with optional required files.
           </DialogDescription>
         </DialogHeader>
 
@@ -175,7 +171,7 @@ const CreateRequestDialog: React.FC<CreateRequestDialogProps> = ({
               name="description"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Description</FormLabel>
+                  <FormLabel>Description (Optional)</FormLabel>
                   <FormControl>
                     <Textarea 
                       placeholder="Please provide your Q1 2024 financial statements including balance sheet, income statement, and cash flow statement." 
@@ -204,7 +200,7 @@ const CreateRequestDialog: React.FC<CreateRequestDialogProps> = ({
 
             <div>
               <div className="flex justify-between items-center mb-2">
-                <Label>Required Files</Label>
+                <Label>Files (Optional)</Label>
                 <Button
                   type="button"
                   variant="ghost"

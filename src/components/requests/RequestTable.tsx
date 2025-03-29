@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
@@ -70,9 +69,8 @@ const RequestTable: React.FC<RequestTableProps> = ({ requests, className, showAp
           <TableHeader>
             <TableRow className="bg-muted/50">
               <TableHead className="w-[300px]">Document Request</TableHead>
-              <TableHead>Required Files</TableHead>
-              <TableHead className="text-center">Status</TableHead>
               <TableHead>Due Date</TableHead>
+              <TableHead className="text-center">Status</TableHead>
               <TableHead className="text-right">Action</TableHead>
             </TableRow>
           </TableHeader>
@@ -95,15 +93,6 @@ const RequestTable: React.FC<RequestTableProps> = ({ requests, className, showAp
                       )}
                       <span>{request.title}</span>
                     </div>
-                  </TableCell>
-                  <TableCell onClick={() => toggleRow(request.id)}>
-                    <div className="flex items-center space-x-1">
-                      <FileIcon className="h-4 w-4 text-muted-foreground" />
-                      <span>{request.requiredFiles.length} files</span>
-                    </div>
-                  </TableCell>
-                  <TableCell className="text-center" onClick={() => toggleRow(request.id)}>
-                    <StatusBadge status={request.status} />
                   </TableCell>
                   <TableCell onClick={() => toggleRow(request.id)}>
                     <div className="flex items-center space-x-2">
@@ -130,6 +119,9 @@ const RequestTable: React.FC<RequestTableProps> = ({ requests, className, showAp
                         </span>
                       )}
                     </div>
+                  </TableCell>
+                  <TableCell className="text-center" onClick={() => toggleRow(request.id)}>
+                    <StatusBadge status={request.status} />
                   </TableCell>
                   <TableCell className="text-right">
                     {showApproveReject && request.status === 'review' ? (
@@ -207,7 +199,7 @@ const RequestTable: React.FC<RequestTableProps> = ({ requests, className, showAp
                 
                 {expandedRow === request.id && (
                   <TableRow>
-                    <TableCell colSpan={5} className="p-0">
+                    <TableCell colSpan={4} className="p-0">
                       <div className="bg-muted/30 px-10 py-4 border-t">
                         <div className="text-sm text-muted-foreground mb-4">
                           {request.description}
