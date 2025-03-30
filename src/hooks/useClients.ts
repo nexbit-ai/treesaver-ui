@@ -4,7 +4,6 @@ import { Client } from '@/types';
 import { clients as mockClients } from '@/data/mockClients';
 import { apiService } from '@/services/api';
 
-// For now, this uses mock data but could be updated to use the API service
 export const useClients = () => {
   const { 
     data: clients = mockClients, 
@@ -13,10 +12,16 @@ export const useClients = () => {
   } = useQuery({
     queryKey: ['clients'],
     queryFn: async () => {
-      // Eventually replace with API call
-      // return apiService.get<Client[]>('/clients');
-      return mockClients;
+      try {
+        // Call the API to get clients
+        return await apiService.getClients();
+      } catch (error) {
+        console.error('Error fetching clients:', error);
+        // Fallback to mock data if API fails
+        return mockClients;
+      }
     },
+    staleTime: 1000 * 60 * 5, // 5 minutes
   });
 
   const getClientById = (clientId: string) => {

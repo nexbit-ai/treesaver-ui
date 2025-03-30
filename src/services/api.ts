@@ -64,41 +64,80 @@ export async function fetchApi<T>(
 }
 
 export const apiService = {
-  // Document requests
-  getDocumentRequests: () => {
-    return fetchApi('/document-requests');
+  // Client APIs
+  getClients: () => {
+    return fetchApi('/v1/firm/clients');
   },
   
-  getDocumentRequestById: (id: string) => {
-    return fetchApi(`/document-requests/${id}`);
+  getClientById: (clientId: string) => {
+    return fetchApi(`/v1/firm/client/${clientId}`);
+  },
+  
+  // Audit APIs
+  getAudits: () => {
+    return fetchApi('/v1/firm/audits');
+  },
+  
+  getAuditsByClientId: (clientId: string) => {
+    return fetchApi(`/v1/firm/client/${clientId}`);
+  },
+  
+  getAuditById: (auditId: string) => {
+    return fetchApi(`/v1/firm/audit/${auditId}`);
+  },
+  
+  // Document Request APIs
+  getRequestsByAuditId: (auditId: string) => {
+    return fetchApi(`/v1/firm/audit/${auditId}/requests`);
+  },
+  
+  createDocumentRequest: (auditId: string, requestData: { name: string, expiry_date: string, description?: string }) => {
+    return fetchApi(`/v1/firm/${auditId}/request`, {
+      method: 'POST',
+      body: JSON.stringify(requestData),
+    });
   },
   
   // File uploads - using FormData for file upload
   uploadFiles: async (requestId: string, files: File[]) => {
     const formData = new FormData();
-    formData.append('requestId', requestId);
     
-    files.forEach(file => {
-      // Sanitize filenames before upload
-      const sanitizedName = file.name.replace(/[^\w\s.-]/gi, '_');
-      formData.append('files', file, sanitizedName);
-    });
+    // Prepare files array for API format
+    const filesData = files.map(file => ({
+      file_name: file.name,
+      file_type: file.type,
+      file_size: file.size,
+      description: `Uploaded file: ${file.name}`
+    }));
     
-    const response = await fetch(`${API_BASE_URL}/uploads`, {
+    // Send as JSON to match API contract
+    return fetchApi(`/v1/firm/upload/${requestId}`, {
       method: 'POST',
-      body: formData,
-      // Don't set Content-Type header, browser sets it with boundary for FormData
+      body: JSON.stringify({
+        files: filesData
+      }),
     });
-    
-    return handleResponse(response);
   },
   
   // Comments
   addComment: (requestId: string, comment: string) => {
-    return fetchApi(`/document-requests/${requestId}/comments`, {
+    return fetchApi(`/api/v1/request/${requestId}/comment`, {
       method: 'POST',
-      body: JSON.stringify({ comment }),
+      body: JSON.stringify({ content: comment }),
     });
+  },
+  
+  // Request Status updates
+  updateRequestStatus: (requestId: string, status: string) => {
+    return fetchApi(`/v1/firm/request/${requestId}/status`, {
+      method: 'PUT',
+      body: JSON.stringify({ status }),
+    });
+  },
+  
+  // Health check
+  healthCheck: () => {
+    return fetchApi('/health');
   },
   
   // Generic CRUD operations that can be used for different resources

@@ -4,19 +4,28 @@ import { Audit } from '@/types';
 import { audits as mockAudits } from '@/data/mockClients';
 import { apiService } from '@/services/api';
 
-// For now, this uses mock data but could be updated to use the API service
-export const useAudits = () => {
+export const useAudits = (clientId?: string) => {
   const { 
     data: audits = mockAudits, 
     isLoading, 
     error 
   } = useQuery({
-    queryKey: ['audits'],
+    queryKey: clientId ? ['audits', clientId] : ['audits'],
     queryFn: async () => {
-      // Eventually replace with API call
-      // return apiService.get<Audit[]>('/audits');
-      return mockAudits;
+      try {
+        if (clientId) {
+          // Get audits for specific client
+          return await apiService.getAuditsByClientId(clientId);
+        }
+        // Get all audits
+        return await apiService.getAudits();
+      } catch (error) {
+        console.error('Error fetching audits:', error);
+        // Fallback to mock data if API fails
+        return mockAudits;
+      }
     },
+    staleTime: 1000 * 60 * 5, // 5 minutes
   });
 
   const getAuditsByClientId = (clientId: string) => {

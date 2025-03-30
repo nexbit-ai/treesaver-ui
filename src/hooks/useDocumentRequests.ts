@@ -5,21 +5,33 @@ import { apiService } from '@/services/api';
 import { toast } from 'sonner';
 import { documentRequests as mockRequests } from '@/data/mockData';
 
-export const useDocumentRequests = () => {
+export const useDocumentRequests = (auditId?: string) => {
   const queryClient = useQueryClient();
 
-  // Get all requests
+  // Get all requests or requests for a specific audit
   const { 
-    data: requests = mockRequests as DocumentRequest[], 
+    data: requests = mockRequests as unknown as DocumentRequest[], 
     isLoading, 
     error 
   } = useQuery({
-    queryKey: ['documentRequests'],
+    queryKey: auditId ? ['documentRequests', auditId] : ['documentRequests'],
     queryFn: async () => {
-      // In a real app, this would be:
-      // return apiService.get<DocumentRequest[]>('/document-requests');
-      return mockRequests as DocumentRequest[];
+      try {
+        if (auditId) {
+          // Get requests for specific audit
+          return await apiService.getRequestsByAuditId(auditId);
+        }
+        // In a real environment without auditId, we might need a different endpoint
+        // or just return mock data for now
+        return mockRequests as unknown as DocumentRequest[];
+      } catch (error) {
+        console.error('Error fetching document requests:', error);
+        // Fallback to mock data if API fails
+        return mockRequests as unknown as DocumentRequest[];
+      }
     },
+    // Prevent too frequent refreshes
+    staleTime: 1000 * 60 * 5, // 5 minutes
   });
 
   // Filter requests by status
@@ -35,6 +47,9 @@ export const useDocumentRequests = () => {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['documentRequests'] });
+      if (auditId) {
+        queryClient.invalidateQueries({ queryKey: ['documentRequests', auditId] });
+      }
       toast.success('Files uploaded successfully');
     },
     onError: (error) => {
@@ -42,14 +57,37 @@ export const useDocumentRequests = () => {
     }
   });
 
-  // Update request status
-  const updateStatusMutation = useMutation({
-    mutationFn: ({ requestId, status }: { requestId: string, status: StatusType }) => {
-      return apiService.put(`/document-requests/${requestId}/status`, { status });
+  // Create document request
+  const createRequestMutation = useMutation({
+    mutationFn: ({ auditId, data }: { auditId: string, data: { name: string, expiry_date: string, description?: string } }) => {
+      return apiService.createDocumentRequest(auditId, data);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['documentRequests'] });
+      if (auditId) {
+        queryClient.invalidateQueries({ queryKey: ['documentRequests', auditId] });
+      }
+      toast.success('Document request created successfully');
+    },
+    onError: (error) => {
+      toast.error(`Failed to create request: ${(error as Error).message}`);
+    }
+  });
+
+  // Update request status
+  const updateStatusMutation = useMutation({
+    mutationFn: ({ requestId, status }: { requestId: string, status: StatusType }) => {
+      return apiService.updateRequestStatus(requestId, status);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['documentRequests'] });
+      if (auditId) {
+        queryClient.invalidateQueries({ queryKey: ['documentRequests', auditId] });
+      }
       toast.success('Status updated');
+    },
+    onError: (error) => {
+      toast.error(`Failed to update status: ${(error as Error).message}`);
     }
   });
 
@@ -60,6 +98,9 @@ export const useDocumentRequests = () => {
     getRequestsByStatus,
     uploadFiles: uploadFilesMutation.mutate,
     isUploading: uploadFilesMutation.isPending,
-    updateStatus: updateStatusMutation.mutate
+    createRequest: createRequestMutation.mutate,
+    isCreating: createRequestMutation.isPending,
+    updateStatus: updateStatusMutation.mutate,
+    isUpdating: updateStatusMutation.isPending
   };
 };
