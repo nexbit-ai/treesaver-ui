@@ -10,7 +10,7 @@ export const useDocumentRequests = (auditId?: string) => {
 
   // Get all requests or requests for a specific audit
   const { 
-    data: requests = mockRequests as unknown as DocumentRequest[], 
+    data: requests = [] as DocumentRequest[], 
     isLoading, 
     error 
   } = useQuery({
@@ -19,7 +19,8 @@ export const useDocumentRequests = (auditId?: string) => {
       try {
         if (auditId) {
           // Get requests for specific audit
-          return await apiService.getRequestsByAuditId(auditId);
+          const result = await apiService.getRequestsByAuditId(auditId);
+          return result as DocumentRequest[];
         }
         // In a real environment without auditId, we might need a different endpoint
         // or just return mock data for now

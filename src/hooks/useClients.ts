@@ -6,7 +6,7 @@ import { apiService } from '@/services/api';
 
 export const useClients = () => {
   const { 
-    data: clients = mockClients, 
+    data: clients = [] as Client[], 
     isLoading, 
     error 
   } = useQuery({
@@ -14,7 +14,8 @@ export const useClients = () => {
     queryFn: async () => {
       try {
         // Call the API to get clients
-        return await apiService.getClients();
+        const result = await apiService.getClients();
+        return result as Client[];
       } catch (error) {
         console.error('Error fetching clients:', error);
         // Fallback to mock data if API fails

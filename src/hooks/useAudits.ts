@@ -6,7 +6,7 @@ import { apiService } from '@/services/api';
 
 export const useAudits = (clientId?: string) => {
   const { 
-    data: audits = mockAudits, 
+    data: audits = [] as Audit[], 
     isLoading, 
     error 
   } = useQuery({
@@ -15,10 +15,12 @@ export const useAudits = (clientId?: string) => {
       try {
         if (clientId) {
           // Get audits for specific client
-          return await apiService.getAuditsByClientId(clientId);
+          const result = await apiService.getAuditsByClientId(clientId);
+          return result as Audit[];
         }
         // Get all audits
-        return await apiService.getAudits();
+        const result = await apiService.getAudits();
+        return result as Audit[];
       } catch (error) {
         console.error('Error fetching audits:', error);
         // Fallback to mock data if API fails
