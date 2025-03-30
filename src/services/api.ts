@@ -1,4 +1,3 @@
-
 // Central file for API communication
 
 import { toast } from "sonner";
@@ -6,10 +5,10 @@ import { Audit, Client, DocumentRequest } from "@/types";
 
 // Base API URL that can be configured from environment variables
 // Set a dummy host as default for now, to be changed later by user
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'https://dummy-api.nexbit.io';
+const API_BASE_URL = "http://3.110.206.111:8080"
 
 // Flag to determine if we should use mock responses
-const USE_MOCK_RESPONSES = true;
+const USE_MOCK_RESPONSES = false;
 
 // Mock responses based on the format provided by the user
 const MOCK_RESPONSES = {
@@ -145,22 +144,67 @@ export async function fetchApi<T>(
   options: RequestInit = {}
 ): Promise<T> {
   try {
+    // If mock responses are enabled, don't even attempt the network request
+    if (USE_MOCK_RESPONSES) {
+      // Handle specific endpoints with mock data
+      if (endpoint.includes('/auth/me')) {
+        await mockDelay();
+        return { 
+          authenticated: true,
+          user: {
+            id: "mock-user-id",
+            email: "user@example.com",
+            name: "Mock User"
+          }
+        } as unknown as T;
+      }
+      
+      // For other endpoints, continue with regular mock handling later
+    }
+    
     const response = await fetch(`${API_BASE_URL}${endpoint}`, {
       ...options,
       headers: {
         'Content-Type': 'application/json',
         ...options.headers,
       },
+      // Add CORS mode
+      mode: 'cors',
+      credentials: 'include',
     });
     
     return handleResponse<T>(response);
   } catch (error) {
-    if ((error as ApiError).status) {
+    console.error('API Error:', error);
+    
+    // Check if it's a CORS error (this is an approximation since browsers don't explicitly identify CORS errors)
+    const errorMessage = (error as Error).message || '';
+    const isCorsError = errorMessage.includes('CORS') || 
+      errorMessage.includes('Failed to fetch') || 
+      errorMessage.includes('Network request failed');
+    
+    if (isCorsError) {
+      toast.error('CORS error: Unable to connect to API. Using mock data instead.');
+      console.warn('CORS error detected, falling back to mock data');
+      
+      // Force enable mock responses for this call
+      if (endpoint.includes('/auth/me')) {
+        await mockDelay();
+        return { 
+          authenticated: true,
+          user: {
+            id: "mock-user-id",
+            email: "user@example.com",
+            name: "Mock User"
+          }
+        } as unknown as T;
+      }
+    } else if ((error as ApiError).status) {
       toast.error((error as ApiError).message);
     } else {
       toast.error('Network error. Please check your connection.');
-      console.error('API Error:', error);
     }
+    
     throw error;
   }
 }
