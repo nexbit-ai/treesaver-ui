@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -33,8 +32,12 @@ const CPADashboard = () => {
   const isMobile = useIsMobile();
   
   const { clients, isLoading: isLoadingClients } = useClients();
-  const { getAuditsByClientId, getAuditById } = useAudits();
-  const { requests, isLoading, error, getRequestsByStatus } = useDocumentRequests();
+  const { audits, getAuditsByClientId, getAuditById, isLoading: isLoadingAudits } = useAudits(
+    selectedClient ? selectedClient.id : undefined
+  );
+  const { requests, isLoading, error, getRequestsByStatus } = useDocumentRequests(
+    selectedAudit ? selectedAudit.id : undefined
+  );
   
   // Filter requests based on selections
   const filteredRequests = selectedAudit 
@@ -43,9 +46,8 @@ const CPADashboard = () => {
       ? requests.filter(req => req.clientId === selectedClient.id)
       : getRequestsByStatus(activeTab);
   
-  const clientAudits = selectedClient 
-    ? getAuditsByClientId(selectedClient.id) 
-    : [];
+  // Use the audits from the useAudits hook directly without calling getAuditsByClientId
+  const clientAudits = selectedClient ? audits : [];
 
   const handleClientSelect = (client: Client | null) => {
     setSelectedClient(client);
@@ -94,7 +96,7 @@ const CPADashboard = () => {
       <header className="sticky top-0 z-10 bg-background/80 backdrop-blur-lg border-b">
         <div className="container mx-auto px-4 py-4 flex items-center justify-between">
           <div>
-            <h1 className="text-2xl font-semibold tracking-tight">CPA Dashboard</h1>
+            <h1 className="text-2xl font-semibold tracking-tight">CA Dashboard</h1>
             <p className="text-muted-foreground">Manage client document requests</p>
           </div>
           <div className="flex gap-2">
@@ -168,7 +170,7 @@ const CPADashboard = () => {
                 <CardContent>
                   <div className="text-sm">
                     <p className="text-muted-foreground">Industry: {client.industry}</p>
-                    <p className="text-muted-foreground">Contact: {client.contactPerson}</p>
+                    {/* <p className="text-muted-foreground">Contact: {client.contactPerson}</p> */}
                   </div>
                 </CardContent>
               </Card>
@@ -182,40 +184,56 @@ const CPADashboard = () => {
               <p className="text-muted-foreground">{selectedClient.companyName}</p>
             </div>
             
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {clientAudits.map((audit) => (
-                <Card 
-                  key={audit.id} 
-                  className="cursor-pointer hover:bg-muted/50 transition-colors"
-                  onClick={() => handleAuditSelect(audit)}
-                >
-                  <CardHeader>
-                    <CardTitle className="flex items-center gap-2">
-                      <ClipboardList className="h-5 w-5 text-muted-foreground" />
-                      {audit.name}
-                    </CardTitle>
-                    <CardDescription>Fiscal Year: {audit.fiscalYear}</CardDescription>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="text-sm">
-                      <div className="flex justify-between items-center mb-2">
-                        <span className="text-muted-foreground">Status:</span>
-                        <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                          audit.status === 'completed' ? 'bg-green-100 text-green-800' :
-                          audit.status === 'in-progress' ? 'bg-blue-100 text-blue-800' :
-                          'bg-yellow-100 text-yellow-800'
-                        }`}>
-                          {audit.status.charAt(0).toUpperCase() + audit.status.slice(1)}
-                        </span>
+            {isLoadingAudits ? (
+              <div className="flex justify-center items-center py-12">
+                <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+              </div>
+            ) : clientAudits.length > 0 ? (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {clientAudits.map((audit) => (
+                  <Card 
+                    key={audit.id} 
+                    className="cursor-pointer hover:bg-muted/50 transition-colors"
+                    onClick={() => handleAuditSelect(audit)}
+                  >
+                    <CardHeader>
+                      <CardTitle className="flex items-center gap-2">
+                        <ClipboardList className="h-5 w-5 text-muted-foreground" />
+                        {audit.name}
+                      </CardTitle>
+                      <CardDescription>Fiscal Year: {audit.fiscalYear}</CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="text-sm">
+                        <div className="flex justify-between items-center mb-2">
+                          <span className="text-muted-foreground">Status:</span>
+                          <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                            audit.status === 'completed' ? 'bg-green-100 text-green-800' :
+                            audit.status === 'in-progress' ? 'bg-blue-100 text-blue-800' :
+                            'bg-yellow-100 text-yellow-800'
+                          }`}>
+                            {audit.status.charAt(0).toUpperCase() + audit.status.slice(1)}
+                          </span>
+                        </div>
+                        <p className="text-muted-foreground">
+                          {new Date(audit.startDate).toLocaleDateString()} - {new Date(audit.endDate).toLocaleDateString()}
+                        </p>
                       </div>
-                      <p className="text-muted-foreground">
-                        {new Date(audit.startDate).toLocaleDateString()} - {new Date(audit.endDate).toLocaleDateString()}
-                      </p>
-                    </div>
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            ) : (
+              <div className="text-center py-12 bg-muted/30 rounded-lg border border-dashed">
+                <div className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-muted mb-4">
+                  <ClipboardList className="h-6 w-6 text-muted-foreground" />
+                </div>
+                <h3 className="text-lg font-medium">No audits found</h3>
+                <p className="text-muted-foreground mt-1">
+                  There are no audits configured for this client yet.
+                </p>
+              </div>
+            )}
           </div>
         ) : (
           // Request List View for a specific audit

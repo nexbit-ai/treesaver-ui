@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogClose } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -14,6 +14,7 @@ import { Client, Audit } from '@/types';
 import { useClients } from '@/hooks/useClients';
 import { useAudits } from '@/hooks/useAudits';
 import { toast } from 'sonner';
+import { apiService } from '@/services/api';
 
 const requestFormSchema = z.object({
   title: z.string().min(3, { message: 'Request title is required' }),
@@ -45,10 +46,9 @@ const CreateRequestDialog: React.FC<CreateRequestDialogProps> = ({
   selectedAuditId 
 }) => {
   const { clients } = useClients();
-  const { audits, getAuditsByClientId } = useAudits();
-  const [filteredAudits, setFilteredAudits] = useState<Audit[]>(
-    selectedClientId ? getAuditsByClientId(selectedClientId) : []
-  );
+  const { audits, getAuditsByClientId } = useAudits(selectedClientId);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [filteredAudits, setFilteredAudits] = useState<Audit[]>([]);
 
   const form = useForm<RequestFormValues>({
     resolver: zodResolver(requestFormSchema),
@@ -62,28 +62,68 @@ const CreateRequestDialog: React.FC<CreateRequestDialogProps> = ({
     }
   });
 
+  useEffect(() => {
+    if (open) {
+      form.reset({
+        title: '',
+        description: '',
+        dueDate: new Date().toISOString().split('T')[0],
+        clientId: selectedClientId || '',
+        auditId: selectedAuditId || '',
+        requiredFiles: [{ name: '', description: '' }]
+      });
+      
+      if (selectedClientId) {
+        setFilteredAudits(audits);
+      } else {
+        setFilteredAudits([]);
+      }
+    }
+  }, [open, selectedClientId, selectedAuditId, audits, form]);
+
   const { fields, append, remove } = useFieldArray({
     control: form.control,
     name: "requiredFiles"
   });
 
   const handleClientChange = (clientId: string) => {
+    // Update form values
     form.setValue('clientId', clientId);
     form.setValue('auditId', '');
+    
+    // If a new client is selected, we need to fetch their audits from mock data
+    // since we're not re-fetching from the API in this component
     const clientAudits = getAuditsByClientId(clientId);
     setFilteredAudits(clientAudits);
   };
 
-  const onSubmit = (data: RequestFormValues) => {
+  const onSubmit = async (data: RequestFormValues) => {
     console.log('Creating request:', data);
-    toast.success("Document request created successfully");
-    onOpenChange(false);
-    form.reset();
+    setIsSubmitting(true);
+    
+    try {
+      const formattedDueDate = new Date(data.dueDate).toISOString();
+      
+      const response = await apiService.createDocumentRequest(data.auditId, {
+        name: data.title,
+        expiry_date: formattedDueDate,
+        description: data.description
+      });
+      
+      toast.success("Document request created successfully");
+      onOpenChange(false);
+      form.reset();
+    } catch (error) {
+      console.error("Error creating request:", error);
+      toast.error("Failed to create document request");
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[600px]">
+      <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>Create New Document Request</DialogTitle>
           <DialogDescription>
@@ -101,8 +141,9 @@ const CreateRequestDialog: React.FC<CreateRequestDialogProps> = ({
                   <FormItem>
                     <FormLabel>Client</FormLabel>
                     <Select
-                      onValueChange={(value) => handleClientChange(value)}
-                      defaultValue={field.value}
+                      onValueChange={handleClientChange}
+                      value={field.value}
+                      disabled={!!selectedClientId}
                     >
                       <FormControl>
                         <SelectTrigger>
@@ -130,8 +171,8 @@ const CreateRequestDialog: React.FC<CreateRequestDialogProps> = ({
                     <FormLabel>Audit</FormLabel>
                     <Select
                       onValueChange={field.onChange}
-                      defaultValue={field.value}
-                      disabled={!form.watch('clientId')}
+                      value={field.value}
+                      disabled={!form.watch('clientId') || !!selectedAuditId}
                     >
                       <FormControl>
                         <SelectTrigger>
@@ -139,11 +180,17 @@ const CreateRequestDialog: React.FC<CreateRequestDialogProps> = ({
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
-                        {filteredAudits.map((audit) => (
-                          <SelectItem key={audit.id} value={audit.id}>
-                            {audit.name} ({audit.fiscalYear})
+                        {filteredAudits.length > 0 ? (
+                          filteredAudits.map((audit) => (
+                            <SelectItem key={audit.id} value={audit.id}>
+                              {audit.name} ({audit.fiscalYear})
+                            </SelectItem>
+                          ))
+                        ) : (
+                          <SelectItem value="none" disabled>
+                            No audits available
                           </SelectItem>
-                        ))}
+                        )}
                       </SelectContent>
                     </Select>
                     <FormMessage />
@@ -275,7 +322,16 @@ const CreateRequestDialog: React.FC<CreateRequestDialogProps> = ({
               <DialogClose asChild>
                 <Button type="button" variant="outline">Cancel</Button>
               </DialogClose>
-              <Button type="submit">Create Request</Button>
+              <Button type="submit" disabled={isSubmitting}>
+                {isSubmitting ? (
+                  <>
+                    <span className="mr-2">Creating...</span>
+                    <span className="animate-spin">⧗</span>
+                  </>
+                ) : (
+                  "Create Request"
+                )}
+              </Button>
             </DialogFooter>
           </form>
         </Form>

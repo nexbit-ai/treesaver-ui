@@ -18,6 +18,7 @@ export const useDocumentRequests = (auditId?: string) => {
     queryFn: async () => {
       try {
         if (auditId) {
+          console.log('auditId', auditId);
           // Get requests for specific audit
           const result = await apiService.getRequestsByAuditId(auditId);
           return result as DocumentRequest[];

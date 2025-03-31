@@ -19,6 +19,13 @@ const MOCK_RESPONSES = {
       industry: "finance",
       created_at: "2024-01-01T00:00:00Z",
       updated_at: "2024-12-31T23:59:59Z"
+    },
+    {
+      client_id: "223e4567-e89b-12d3-a456-426614174001",
+      client_name: "Tech Solutions Inc.",
+      industry: "technology",
+      created_at: "2024-01-15T00:00:00Z",
+      updated_at: "2024-12-31T23:59:59Z"
     }
   ],
   
@@ -31,6 +38,24 @@ const MOCK_RESPONSES = {
       audit_end_date: "2025-12-31T23:59:59Z",
       created_at: "2025-03-30T10:42:40.546249Z",
       updated_at: "2025-03-30T10:42:40.546249Z"
+    },
+    {
+      audit_id: "4dfc259c-a31c-476c-a0bf-9f16db0b561f",
+      client_id: "123e4567-e89b-12d3-a456-426614174000",
+      audit_name: "Tax Audit 2024",
+      audit_start_date: "2024-01-15T08:30:00.000000Z",
+      audit_end_date: "2024-04-15T23:59:59Z",
+      created_at: "2024-01-10T10:00:00.000000Z",
+      updated_at: "2024-01-10T10:00:00.000000Z"
+    },
+    {
+      audit_id: "5dfc259c-a31c-476c-a0bf-9f16db0b562g",
+      client_id: "223e4567-e89b-12d3-a456-426614174001",
+      audit_name: "Compliance Audit 2024",
+      audit_start_date: "2024-02-01T09:00:00.000000Z",
+      audit_end_date: "2024-05-30T23:59:59Z",
+      created_at: "2024-01-20T11:15:00.000000Z",
+      updated_at: "2024-01-20T11:15:00.000000Z"
     }
   ],
   
