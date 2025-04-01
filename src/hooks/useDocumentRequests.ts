@@ -1,9 +1,14 @@
-
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { DocumentRequest, StatusType } from '@/types';
 import { apiService } from '@/services/api';
 import { toast } from 'sonner';
 import { documentRequests as mockRequests } from '@/data/mockData';
+
+interface UploadFilesParams {
+  requestId: string;
+  files: File[];
+  onSuccess?: () => Promise<void>;
+}
 
 export const useDocumentRequests = (auditId?: string) => {
   const queryClient = useQueryClient();
@@ -36,6 +41,16 @@ export const useDocumentRequests = (auditId?: string) => {
     staleTime: 1000 * 60 * 5, // 5 minutes
   });
 
+  // Get documents for a specific request
+  const getDocuments = async (requestId: string) => {
+    try {
+      return await apiService.getDocumentsByRequestId(requestId);
+    } catch (error) {
+      console.error('Error fetching documents:', error);
+      return [];
+    }
+  };
+
   // Filter requests by status
   const getRequestsByStatus = (status: string) => {
     if (status === 'all') return requests;
@@ -44,20 +59,27 @@ export const useDocumentRequests = (auditId?: string) => {
 
   // Upload files mutation
   const uploadFilesMutation = useMutation({
-    mutationFn: ({ requestId, files }: { requestId: string, files: File[] }) => {
+    mutationFn: async ({ requestId, files }: UploadFilesParams) => {
       return apiService.uploadFiles(requestId, files);
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['documentRequests'] });
-      if (auditId) {
-        queryClient.invalidateQueries({ queryKey: ['documentRequests', auditId] });
+    onSuccess: async (_, variables) => {
+      // Call the onSuccess callback if provided
+      if (variables.onSuccess) {
+        await variables.onSuccess();
       }
+      // Invalidate queries to refresh the data
+      queryClient.invalidateQueries({ queryKey: ['requests', auditId] });
       toast.success('Files uploaded successfully');
     },
     onError: (error) => {
-      toast.error(`Upload failed: ${(error as Error).message}`);
-    }
+      console.error('Error uploading files:', error);
+      toast.error('Failed to upload files');
+    },
   });
+
+  const uploadFiles = ({ requestId, files, onSuccess }: UploadFilesParams) => {
+    return uploadFilesMutation.mutateAsync({ requestId, files, onSuccess });
+  };
 
   // Create document request
   const createRequestMutation = useMutation({
@@ -98,11 +120,12 @@ export const useDocumentRequests = (auditId?: string) => {
     isLoading,
     error,
     getRequestsByStatus,
-    uploadFiles: uploadFilesMutation.mutate,
+    uploadFiles,
     isUploading: uploadFilesMutation.isPending,
     createRequest: createRequestMutation.mutate,
     isCreating: createRequestMutation.isPending,
     updateStatus: updateStatusMutation.mutate,
-    isUpdating: updateStatusMutation.isPending
+    isUpdating: updateStatusMutation.isPending,
+    getDocuments
   };
 };

@@ -138,23 +138,6 @@ const RequestTable: React.FC<RequestTableProps> = ({ requests, className }) => {
                         <DialogHeader>
                           <DialogTitle>{request.title}</DialogTitle>
                         </DialogHeader>
-                        <div className="mt-2 text-muted-foreground">
-                          {request.description}
-                        </div>
-                        <div className="my-4">
-                          <h4 className="text-sm font-medium mb-2">Required Files:</h4>
-                          <div className="flex flex-wrap gap-2">
-                            {request.requiredFiles.map((file, index) => (
-                              <div 
-                                key={index} 
-                                className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-muted text-muted-foreground"
-                              >
-                                <FileIcon className="h-3 w-3 mr-1.5" />
-                                {file}
-                              </div>
-                            ))}
-                          </div>
-                        </div>
                         <FileUploader 
                           onFilesSelected={(files) => handleFilesSelected(request.id, files)} 
                           requestId={request.id}
@@ -168,25 +151,6 @@ const RequestTable: React.FC<RequestTableProps> = ({ requests, className }) => {
                   <TableRow className="animate-fade-in">
                     <TableCell colSpan={5} className="p-0">
                       <div className="bg-muted/30 px-10 py-4 border-t">
-                        <div className="text-sm text-muted-foreground mb-4">
-                          {request.description}
-                        </div>
-                        
-                        <div className="mb-4">
-                          <h4 className="text-sm font-medium mb-2">Required Files:</h4>
-                          <div className="flex flex-wrap gap-2">
-                            {request.requiredFiles.map((file, index) => (
-                              <div 
-                                key={index} 
-                                className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-muted border border-border"
-                              >
-                                <FileIcon className="h-3 w-3 mr-1.5" />
-                                {file}
-                              </div>
-                            ))}
-                          </div>
-                        </div>
-                        
                         {request.uploadedFiles && request.uploadedFiles.length > 0 && (
                           <div>
                             <h4 className="text-sm font-medium mb-2">Uploaded Files:</h4>

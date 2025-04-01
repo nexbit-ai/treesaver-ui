@@ -138,6 +138,18 @@ const mapRequestResponse = (requestData: any): DocumentRequest => ({
   requiredFiles: []
 });
 
+const mapDocumentResponse = (documentData: any) => ({
+  id: documentData.document_id,
+  requestId: documentData.request_id,
+  name: documentData.document_name,
+  awsLocationId: documentData.aws_location_id,
+  fileType: documentData.file_type,
+  fileSize: documentData.file_size,
+  status: documentData.status,
+  uploadedAt: documentData.uploaded_at,
+  updatedAt: documentData.updated_at
+});
+
 // Helper function to handle fetch responses
 async function handleResponse<T>(response: Response): Promise<T> {
   if (!response.ok) {
@@ -256,14 +268,6 @@ export const apiService = {
   },
   
   // Audit APIs
-  getAudits: async () => {
-    if (USE_MOCK_RESPONSES) {
-      await mockDelay();
-      return MOCK_RESPONSES.clientAudits.map(mapAuditResponse);
-    }
-    const response = await fetchApi('/v1/firm/audits');
-    return (response as any[]).map(mapAuditResponse);
-  },
   
   getAuditsByClientId: async (clientId: string) => {
     if (USE_MOCK_RESPONSES) {
@@ -273,16 +277,6 @@ export const apiService = {
     }
     const response = await fetchApi(`/v1/firm/client/${clientId}`);
     return (response as any[]).map(mapAuditResponse);
-  },
-  
-  getAuditById: async (auditId: string) => {
-    if (USE_MOCK_RESPONSES) {
-      await mockDelay();
-      const audit = MOCK_RESPONSES.clientAudits.find(a => a.audit_id === auditId);
-      return audit ? mapAuditResponse(audit) : null;
-    }
-    const response = await fetchApi(`/v1/firm/audit/${auditId}`);
-    return mapAuditResponse(response);
   },
   
   // Document Request APIs
@@ -315,7 +309,7 @@ export const apiService = {
   // File uploads - using FormData for file upload
   uploadFiles: async (requestId: string, files: File[]) => {
     if (USE_MOCK_RESPONSES) {
-      await mockDelay(1000); // Longer delay to simulate upload
+      await mockDelay(1000);
       return {
         success: true,
         message: 'Files uploaded successfully',
@@ -323,21 +317,55 @@ export const apiService = {
       };
     }
     
-    // Prepare files array for API format
-    const filesData = files.map(file => ({
-      file_name: file.name,
-      file_type: file.type,
-      file_size: file.size,
-      description: `Uploaded file: ${file.name}`
-    }));
-    
-    // Send as JSON to match API contract
-    return fetchApi(`/v1/firm/upload/${requestId}`, {
-      method: 'POST',
-      body: JSON.stringify({
-        files: filesData
-      }),
-    });
+    try {
+      // Step 1: Get signed URLs
+      const filesData = files.map(file => ({
+        file_name: file.name,
+        file_type: file.type,
+        file_size: file.size,
+        description: `Uploaded file: ${file.name}`
+      }));
+      
+      const response = await fetchApi<{
+        upload_urls: Record<string, string>;
+        document_ids: Record<string, string>;
+      }>(`/v1/firm/upload/${requestId}`, {
+        method: 'POST',
+        body: JSON.stringify({ files: filesData }),
+      });
+
+      // Step 2: Upload files to signed URLs
+      const uploadPromises = files.map(async (file) => {
+        const signedUrl = response.upload_urls[file.name];
+        if (!signedUrl) {
+          throw new Error(`No signed URL found for file: ${file.name}`);
+        }
+
+        await fetch(signedUrl, {
+          method: 'PUT',
+          body: file,
+          headers: {
+            'Content-Type': file.type,
+          },
+        });
+
+        return {
+          fileName: file.name,
+          documentId: response.document_ids[file.name],
+        };
+      });
+
+      const uploadResults = await Promise.all(uploadPromises);
+      
+      return {
+        success: true,
+        message: 'Files uploaded successfully',
+        documentIds: uploadResults.map(result => result.documentId),
+      };
+    } catch (error) {
+      console.error('Error uploading files:', error);
+      throw error;
+    }
   },
   
   // Comments
@@ -366,8 +394,8 @@ export const apiService = {
         requestId
       };
     }
-    return fetchApi(`/v1/firm/request/${requestId}/status`, {
-      method: 'PUT',
+    return fetchApi(`/v1/firm/status/${requestId}`, {
+      method: 'POST',
       body: JSON.stringify({ status }),
     });
   },
@@ -395,5 +423,31 @@ export const apiService = {
     }),
   delete: <T>(endpoint: string) => 
     fetchApi<T>(endpoint, { method: 'DELETE' }),
+
+  // Document APIs
+  getDocumentsByRequestId: async (requestId: string) => {
+    if (USE_MOCK_RESPONSES) {
+      await mockDelay();
+      return [];
+    }
+    const response = await fetchApi(`/v1/client/${requestId}/documents`);
+    return (response as any[]).map(mapDocumentResponse);
+  },
+
+  // Add new download method
+  getDocumentDownloadUrl: async (documentId: string) => {
+    if (USE_MOCK_RESPONSES) {
+      await mockDelay();
+      return {
+        documentId,
+        downloadUrl: 'https://example.com/mock-document.pdf',
+        expiresIn: '15 minutes',
+        fileName: 'mock-document.pdf',
+        fileSize: 1024,
+        fileType: 'application/pdf'
+      };
+    }
+    return fetchApi(`/v1/firm/documents/${documentId}/download`);
+  },
 };
 

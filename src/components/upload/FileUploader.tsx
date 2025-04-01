@@ -1,4 +1,3 @@
-
 import React, { useState, useRef } from 'react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
@@ -101,7 +100,6 @@ const FileUploader: React.FC<FileUploaderProps> = ({
     if (newValidFiles.length > 0) {
       const updatedFiles = [...selectedFiles, ...newValidFiles];
       setSelectedFiles(updatedFiles);
-      onFilesSelected(updatedFiles);
       toast.success(`${newValidFiles.length} file(s) selected`);
     }
   };
@@ -135,7 +133,12 @@ const FileUploader: React.FC<FileUploaderProps> = ({
       const newFiles = [...selectedFiles];
       newFiles.splice(index, 1);
       setSelectedFiles(newFiles);
-      onFilesSelected(newFiles);
+    }
+  };
+
+  const handleUpload = () => {
+    if (selectedFiles.length > 0) {
+      onFilesSelected(selectedFiles);
     }
   };
 
@@ -224,7 +227,6 @@ const FileUploader: React.FC<FileUploaderProps> = ({
                 className="h-8 px-2 text-xs text-muted-foreground hover:text-destructive"
                 onClick={() => {
                   setSelectedFiles([]);
-                  onFilesSelected([]);
                 }}
               >
                 Clear All
@@ -278,7 +280,7 @@ const FileUploader: React.FC<FileUploaderProps> = ({
           <Button 
             className="w-full mt-4 transition-all hover:shadow-md"
             disabled={selectedFiles.length === 0 || isUploading || readOnly}
-            onClick={() => onFilesSelected(selectedFiles)}
+            onClick={handleUpload}
           >
             {isUploading ? (
               <>
