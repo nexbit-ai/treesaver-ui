@@ -12,15 +12,16 @@ export interface UploadedFile {
 export interface DocumentRequest {
   id: string;
   title: string;
-  description: string;
   dueDate: string;
   status: StatusType;
   createdAt: string;
   updatedAt: string;
   clientId: string;
   auditId: string;
-  requiredFiles: string[];
-  uploadedFiles?: UploadedFile[];
+  requiredFiles: Array<{
+    name: string;
+    description?: string;
+  }>;
 }
 
 // New types

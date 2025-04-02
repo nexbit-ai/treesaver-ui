@@ -15,13 +15,19 @@ import { useClients } from '@/hooks/useClients';
 import { useAudits } from '@/hooks/useAudits';
 import { toast } from 'sonner';
 import { apiService } from '@/services/api';
+import { Checkbox } from '@/components/ui/checkbox';
 
 const requestFormSchema = z.object({
   title: z.string().min(3, { message: 'Request title is required' }),
-  description: z.string().optional(),
   dueDate: z.string().min(1, { message: 'Due date is required' }),
   clientId: z.string().min(1, { message: 'Client is required' }),
   auditId: z.string().min(1, { message: 'Audit is required' }),
+  expectations: z.array(z.string()).default(['']),
+  systemChecks: z.object({
+    checkMissingPages: z.boolean().default(false),
+    checkTamperedDocuments: z.boolean().default(false),
+    checkDocumentIds: z.boolean().default(false)
+  }),
   requiredFiles: z.array(
     z.object({
       name: z.string().optional(),
@@ -54,11 +60,16 @@ const CreateRequestDialog: React.FC<CreateRequestDialogProps> = ({
     resolver: zodResolver(requestFormSchema),
     defaultValues: {
       title: '',
-      description: '',
       dueDate: new Date().toISOString().split('T')[0],
       clientId: selectedClientId || '',
       auditId: selectedAuditId || '',
-      requiredFiles: [{ name: '', description: '' }]
+      requiredFiles: [{ name: '', description: '' }],
+      expectations: [''],
+      systemChecks: {
+        checkMissingPages: false,
+        checkTamperedDocuments: false,
+        checkDocumentIds: false
+      }
     }
   });
 
@@ -66,11 +77,16 @@ const CreateRequestDialog: React.FC<CreateRequestDialogProps> = ({
     if (open) {
       form.reset({
         title: '',
-        description: '',
         dueDate: new Date().toISOString().split('T')[0],
         clientId: selectedClientId || '',
         auditId: selectedAuditId || '',
-        requiredFiles: [{ name: '', description: '' }]
+        requiredFiles: [{ name: '', description: '' }],
+        expectations: [''],
+        systemChecks: {
+          checkMissingPages: false,
+          checkTamperedDocuments: false,
+          checkDocumentIds: false
+        }
       });
       
       if (selectedClientId) {
@@ -81,9 +97,14 @@ const CreateRequestDialog: React.FC<CreateRequestDialogProps> = ({
     }
   }, [open, selectedClientId, selectedAuditId, audits, form]);
 
-  const { fields, append, remove } = useFieldArray({
+  const { fields: requiredFilesFields, append: appendRequiredFile, remove: removeRequiredFile } = useFieldArray({
     control: form.control,
-    name: "requiredFiles"
+    name: "requiredFiles" as keyof RequestFormValues
+  });
+
+  const { fields: expectationFields, append: appendExpectation, remove: removeExpectation } = useFieldArray({
+    control: form.control,
+    name: "expectations" as keyof RequestFormValues
   });
 
   const handleClientChange = (clientId: string) => {
@@ -104,10 +125,28 @@ const CreateRequestDialog: React.FC<CreateRequestDialogProps> = ({
     try {
       const formattedDueDate = new Date(data.dueDate).toISOString();
       
+      // Map system checks to hardcoded prompts
+      const systemPrompts = [];
+      if (data.systemChecks.checkMissingPages) {
+        systemPrompts.push("system_prompt 1");
+      }
+      if (data.systemChecks.checkTamperedDocuments) {
+        systemPrompts.push("system_prompt 2");
+      }
+      if (data.systemChecks.checkDocumentIds) {
+        systemPrompts.push("system_prompt 3");
+      }
+
+      // Filter out empty expectations and join them
+      const auditorExpectations = data.expectations
+        .filter(exp => exp.trim() !== '')
+        .join('\n');
+      
       const response = await apiService.createDocumentRequest(data.auditId, {
         name: data.title,
         expiry_date: formattedDueDate,
-        description: data.description
+        auditor_expectation: auditorExpectations,
+        system_prompt: systemPrompts.join('\n')
       });
       
       toast.success("Document request created successfully");
@@ -213,23 +252,112 @@ const CreateRequestDialog: React.FC<CreateRequestDialogProps> = ({
               )}
             />
 
-            <FormField
-              control={form.control}
-              name="description"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Expectations (Optional)</FormLabel>
-                  <FormControl>
-                    <Textarea 
-                      placeholder="The document should be in the format of a balance sheet, income statement, and cash flow statement." 
-                      className="h-24"
-                      {...field} 
+            <div>
+              <div className="flex justify-between items-center mb-2">
+                <Label>Expectations</Label>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => appendExpectation('')}
+                >
+                  <PlusCircle className="h-4 w-4 mr-1" />
+                  Add Expectation
+                </Button>
+              </div>
+
+              <div className="space-y-3 rounded-md border p-4 bg-muted/20">
+                {expectationFields.map((field, index) => (
+                  <div key={field.id} className="flex items-center gap-2">
+                    <FormField
+                      control={form.control}
+                      name={`expectations.${index}`}
+                      render={({ field }) => (
+                        <FormItem className="flex-1">
+                          <FormControl>
+                            <Input 
+                              placeholder="Enter expectation" 
+                              {...field} 
+                              className="h-8" 
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
                     />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
+                    {expectationFields.length > 1 && (
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => removeExpectation(index)}
+                        className="h-8 w-8 p-0"
+                      >
+                        <X className="h-4 w-4" />
+                        <span className="sr-only">Remove</span>
+                      </Button>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <div>
+              <Label className="mb-2">System Checks</Label>
+              <div className="space-y-2 rounded-md border p-4 bg-muted/20">
+                <FormField
+                  control={form.control}
+                  name="systemChecks.checkMissingPages"
+                  render={({ field }) => (
+                    <FormItem className="flex items-center space-x-2">
+                      <FormControl>
+                        <Checkbox
+                          checked={field.value}
+                          onCheckedChange={field.onChange}
+                        />
+                      </FormControl>
+                      <FormLabel className="text-sm font-normal">
+                        Check for missing pages
+                      </FormLabel>
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="systemChecks.checkTamperedDocuments"
+                  render={({ field }) => (
+                    <FormItem className="flex items-center space-x-2">
+                      <FormControl>
+                        <Checkbox
+                          checked={field.value}
+                          onCheckedChange={field.onChange}
+                        />
+                      </FormControl>
+                      <FormLabel className="text-sm font-normal">
+                        Check for tampered documents
+                      </FormLabel>
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="systemChecks.checkDocumentIds"
+                  render={({ field }) => (
+                    <FormItem className="flex items-center space-x-2">
+                      <FormControl>
+                        <Checkbox
+                          checked={field.value}
+                          onCheckedChange={field.onChange}
+                        />
+                      </FormControl>
+                      <FormLabel className="text-sm font-normal">
+                        Check for correct document IDs
+                      </FormLabel>
+                    </FormItem>
+                  )}
+                />
+              </div>
+            </div>
 
             <FormField
               control={form.control}
@@ -252,7 +380,7 @@ const CreateRequestDialog: React.FC<CreateRequestDialogProps> = ({
                   type="button"
                   variant="ghost"
                   size="sm"
-                  onClick={() => append({ name: '', description: '' })}
+                  onClick={() => appendRequiredFile({ name: '', description: '' })}
                 >
                   <PlusCircle className="h-4 w-4 mr-1" />
                   Add File
@@ -260,19 +388,19 @@ const CreateRequestDialog: React.FC<CreateRequestDialogProps> = ({
               </div>
 
               <div className="space-y-3 rounded-md border p-4 bg-muted/20">
-                {fields.map((field, index) => (
+                {requiredFilesFields.map((field, index) => (
                   <div key={field.id} className="rounded-md border bg-card p-3">
                     <div className="flex items-center justify-between mb-2">
                       <h4 className="text-sm font-medium flex items-center">
                         <FileText className="h-4 w-4 text-muted-foreground mr-1" />
                         File {index + 1}
                       </h4>
-                      {fields.length > 1 && (
+                      {requiredFilesFields.length > 1 && (
                         <Button
                           type="button"
                           variant="ghost"
                           size="sm"
-                          onClick={() => remove(index)}
+                          onClick={() => removeRequiredFile(index)}
                           className="h-8 w-8 p-0"
                         >
                           <X className="h-4 w-4" />

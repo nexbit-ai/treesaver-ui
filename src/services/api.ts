@@ -126,7 +126,6 @@ const mapAuditResponse = (auditData: any): Audit => ({
 const mapRequestResponse = (requestData: any): DocumentRequest => ({
   id: requestData.request_id,
   title: requestData.request_name,
-  description: "Document request description",
   dueDate: requestData.expired_on,
   status: requestData.status.toLowerCase() === "open" ? "pending" : 
           requestData.status.toLowerCase() === "in_review" ? "review" :
@@ -290,7 +289,12 @@ export const apiService = {
     return (response as any[]).map(mapRequestResponse);
   },
   
-  createDocumentRequest: async (auditId: string, requestData: { name: string, expiry_date: string, description?: string }) => {
+  createDocumentRequest: async (auditId: string, requestData: { 
+    name: string, 
+    expiry_date: string,
+    auditor_expectation: string,
+    system_prompt: string 
+  }) => {
     if (USE_MOCK_RESPONSES) {
       await mockDelay();
       const mockResponse = { ...MOCK_RESPONSES.createRequest };

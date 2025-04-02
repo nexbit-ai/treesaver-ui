@@ -11,7 +11,7 @@ import {
 } from '@/components/ui/table';
 import { DocumentRequest } from '@/types';
 import StatusBadge from '@/components/ui/status-badge';
-import { Upload, ChevronDown, ChevronUp, Calendar, FileIcon, Clock, CheckCircle, AlertCircle, ChevronRight, Download } from 'lucide-react';
+import { Upload, ChevronDown, ChevronUp, Calendar, FileIcon, Clock, CheckCircle, AlertCircle, ChevronRight, Download, PlayCircle } from 'lucide-react';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import FileUploader from '@/components/upload/FileUploader';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
@@ -41,7 +41,7 @@ const RequestTable: React.FC<RequestTableProps> = ({ requests, className, showAp
   const [expandedRows, setExpandedRows] = useState<Set<string>>(new Set());
   const [documents, setDocuments] = useState<Record<string, any[]>>({});
   const [loadingDocuments, setLoadingDocuments] = useState<Set<string>>(new Set());
-  const [uploadDialogOpen, setUploadDialogOpen] = useState<string | null>(null);
+  const [testDialogOpen, setTestDialogOpen] = useState<string | null>(null);
   const { uploadFiles, isUploading, updateStatus, getDocuments } = useDocumentRequests();
   
   const toggleRow = async (requestId: string) => {
@@ -72,7 +72,7 @@ const RequestTable: React.FC<RequestTableProps> = ({ requests, className, showAp
         files,
         onSuccess: async () => {
           // Close the upload dialog
-          setUploadDialogOpen(null);
+          setTestDialogOpen(null);
           
           // Refresh the documents list
           setLoadingDocuments(prev => new Set(prev).add(requestId));
@@ -232,12 +232,12 @@ const RequestTable: React.FC<RequestTableProps> = ({ requests, className, showAp
                       </div>
                     ) : (
                       <Dialog 
-                        open={uploadDialogOpen === request.id} 
+                        open={testDialogOpen === request.id} 
                         onOpenChange={(open) => {
                           if (open) {
-                            setUploadDialogOpen(request.id);
+                            setTestDialogOpen(request.id);
                           } else {
-                            setUploadDialogOpen(null);
+                            setTestDialogOpen(null);
                           }
                         }}
                       >
@@ -248,20 +248,17 @@ const RequestTable: React.FC<RequestTableProps> = ({ requests, className, showAp
                             className="h-8"
                             onClick={(e) => e.stopPropagation()}
                           >
-                            <Upload className="h-3.5 w-3.5 mr-1" />
-                            {showApproveReject ? 'View' : 'Upload'}
+                            <PlayCircle className="h-3.5 w-3.5 mr-1" />
+                            Run Tests
                           </Button>
                         </DialogTrigger>
                         <DialogContent className="max-w-2xl">
                           <DialogHeader>
-                            <DialogTitle>{request.title}</DialogTitle>
+                            <DialogTitle>Run Tests for {request.title}</DialogTitle>
                           </DialogHeader>
-                          <FileUploader 
-                            onFilesSelected={(files) => handleFilesSelected(request.id, files)} 
-                            requestId={request.id}
-                            isUploading={isUploading}
-                            readOnly={showApproveReject}
-                          />
+                          <div className="py-4">
+                            <p className="text-muted-foreground">Test modal content will be added here.</p>
+                          </div>
                         </DialogContent>
                       </Dialog>
                     )}
@@ -329,31 +326,28 @@ const RequestTable: React.FC<RequestTableProps> = ({ requests, className, showAp
                             </div>
                           ) : (
                             <Dialog 
-                              open={uploadDialogOpen === request.id}
+                              open={testDialogOpen === request.id}
                               onOpenChange={(open) => {
                                 if (open) {
-                                  setUploadDialogOpen(request.id);
+                                  setTestDialogOpen(request.id);
                                 } else {
-                                  setUploadDialogOpen(null);
+                                  setTestDialogOpen(null);
                                 }
                               }}
                             >
                               <DialogTrigger asChild>
                                 <Button onClick={(e) => e.stopPropagation()}>
-                                  <Upload className="h-4 w-4 mr-2" />
-                                  {showApproveReject ? 'View Documents' : 'Upload Documents'}
+                                  <PlayCircle className="h-4 w-4 mr-2" />
+                                  Run Tests
                                 </Button>
                               </DialogTrigger>
                               <DialogContent className="max-w-2xl">
                                 <DialogHeader>
-                                  <DialogTitle>{request.title}</DialogTitle>
+                                  <DialogTitle>Run Tests for {request.title}</DialogTitle>
                                 </DialogHeader>
-                                <FileUploader 
-                                  onFilesSelected={(files) => handleFilesSelected(request.id, files)} 
-                                  requestId={request.id}
-                                  isUploading={isUploading}
-                                  readOnly={showApproveReject}
-                                />
+                                <div className="py-4">
+                                  <p className="text-muted-foreground">Test modal content will be added here.</p>
+                                </div>
                               </DialogContent>
                             </Dialog>
                           )}
