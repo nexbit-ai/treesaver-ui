@@ -75,7 +75,7 @@ const CPADashboard = () => {
     switch (status) {
       case 'pending':
         return <Clock className="h-4 w-4" />;
-      case 'review':
+      case 'InReview':
         return <Loader2 className="h-4 w-4 animate-spin" />;
       case 'approved':
         return <CheckCircle className="h-4 w-4" />;

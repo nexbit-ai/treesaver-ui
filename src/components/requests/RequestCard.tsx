@@ -105,7 +105,7 @@ const RequestCard: React.FC<RequestCardProps> = ({ request, className, showAppro
         )}
       </CardContent>
       <CardFooter className="pt-2">
-        {showApproveReject && request.status === 'review' ? (
+        {showApproveReject && request.status === 'InReview' ? (
           <div className="flex gap-2 w-full">
             <Button 
               variant="outline" 

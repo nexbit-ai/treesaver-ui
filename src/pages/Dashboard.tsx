@@ -26,7 +26,7 @@ const Dashboard = () => {
   const statusCounts = {
     all: requests.length,
     pending: requests.filter(req => req.status === 'pending').length,
-    review: requests.filter(req => req.status === 'review').length,
+    InReview: requests.filter(req => req.status === 'InReview').length,
     approved: requests.filter(req => req.status === 'approved').length,
     rejected: requests.filter(req => req.status === 'rejected').length,
   };
@@ -35,7 +35,7 @@ const Dashboard = () => {
     switch (status) {
       case 'pending':
         return <Clock className="h-4 w-4" />;
-      case 'review':
+      case 'InReview':
         return <Loader2 className="h-4 w-4" />;
       case 'approved':
         return <CheckCircle className="h-4 w-4" />;
@@ -121,11 +121,11 @@ const Dashboard = () => {
                     {statusCounts.pending}
                   </span>
                 </TabsTrigger>
-                <TabsTrigger value="review" className="flex items-center justify-center gap-1.5">
+                <TabsTrigger value="InReview" className="flex items-center justify-center gap-1.5">
                   <Loader2 className="h-3.5 w-3.5 mr-1 opacity-70" />
                   In Review
                   <span className="text-xs bg-muted rounded-full px-2 py-0.5">
-                    {statusCounts.review}
+                    {statusCounts.InReview}
                   </span>
                 </TabsTrigger>
                 <TabsTrigger value="approved" className="flex items-center justify-center gap-1.5">

@@ -2,6 +2,7 @@
 
 import { toast } from "sonner";
 import { Audit, Client, DocumentRequest } from "@/types";
+import { TestCaseResult } from "@/components/requests/TestCaseResults";
 
 // Base API URL that can be configured from environment variables
 // Set a dummy host as default for now, to be changed later by user
@@ -68,7 +69,9 @@ const MOCK_RESPONSES = {
       created_at: "2025-03-30T10:42:40.561162Z",
       expired_on: "2024-04-30T23:59:59Z",
       active: true,
-      updated_at: "2025-03-30T10:42:40.561162Z"
+      updated_at: "2025-03-30T10:42:40.561162Z",
+      auditor_expectation: "Please verify all financial statements are complete and accurate",
+      system_prompt: "Check for missing pages, tampered documents, and required signatures"
     },
     {
       request_id: "123e4567-e89b-1283-a416-426614174001",
@@ -78,7 +81,9 @@ const MOCK_RESPONSES = {
       created_at: "2025-03-30T10:42:40.562136Z",
       expired_on: "2024-04-30T23:59:59Z",
       active: true,
-      updated_at: "2025-03-30T10:42:40.562136Z"
+      updated_at: "2025-03-30T10:42:40.562136Z",
+      auditor_expectation: "Ensure all documents are properly signed and dated",
+      system_prompt: "Verify document authenticity and completeness"
     }
   ],
   
@@ -90,7 +95,9 @@ const MOCK_RESPONSES = {
     created_at: "0001-01-01T00:00:00Z",
     expired_on: "2024-04-30T23:59:59Z",
     active: true,
-    updated_at: "0001-01-01T00:00:00Z"
+    updated_at: "0001-01-01T00:00:00Z",
+    auditor_expectation: "Please verify all financial statements are complete and accurate",
+    system_prompt: "Check for missing pages, tampered documents, and required signatures"
   }
 };
 
@@ -127,14 +134,18 @@ const mapRequestResponse = (requestData: any): DocumentRequest => ({
   id: requestData.request_id,
   title: requestData.request_name,
   dueDate: requestData.expired_on,
-  status: requestData.status.toLowerCase() === "open" ? "pending" : 
-          requestData.status.toLowerCase() === "in_review" ? "review" :
+  status: requestData.status === "PENDING" ? "pending" : 
+          requestData.status === "IN-REVIEW" ? "InReview" :
+          requestData.status === "APPROVED" ? "approved" :
+          requestData.status === "REJECTED" ? "rejected" :
           requestData.status.toLowerCase(),
   createdAt: requestData.created_at,
   updatedAt: requestData.updated_at,
   clientId: "123e4567-e89b-12d3-a456-426614174000", // Default client ID
   auditId: requestData.audit_id,
-  requiredFiles: []
+  requiredFiles: [],
+  auditor_expectation: requestData.auditor_expectation,
+  system_prompt: requestData.system_prompt
 });
 
 const mapDocumentResponse = (documentData: any) => ({
@@ -485,6 +496,69 @@ export const apiService = {
       };
     }
     return fetchApi(`/v1/analysis/${requestId}/status?threadId=${threadId}&runId=${runId}`);
+  },
+
+  // Add new method for fetching test case results
+  getTestCaseResults: async (requestId: string): Promise<TestCaseResult[]> => {
+    if (USE_MOCK_RESPONSES) {
+      await mockDelay();
+      return [
+        { testCaseName: "Tampered Check", result: "pass", files: "" },
+        { testCaseName: "Missing Page Number", result: "fail", files: "document1.pdf" },
+        { testCaseName: "Signature Check", result: "pass", files: "" },
+        { testCaseName: "Date Check", result: "pass", files: "" },
+        { testCaseName: "Required Documents Check", result: "pass", files: "" }
+      ];
+    }
+    return fetchApi<TestCaseResult[]>(`/v1/client/compile-results/${requestId}`);
+  },
+
+  // File uploads - using FormData for file upload
+  uploadDocument: async (requestId: string, file: File) => {
+    if (USE_MOCK_RESPONSES) {
+      await mockDelay(1000);
+      return {
+        success: true,
+        message: 'File uploaded successfully',
+        documentId: `mock-document-id-${Date.now()}`
+      };
+    }
+    
+    try {
+      // Step 1: Get signed URL
+      const fileData = {
+        file_name: file.name,
+        file_type: file.type,
+        file_size: file.size,
+        description: `Uploaded file: ${file.name}`
+      };
+      
+      const response = await fetchApi<{
+        upload_url: string;
+        document_id: string;
+      }>(`/v1/firm/upload/${requestId}`, {
+        method: 'POST',
+        body: JSON.stringify({ files: [fileData] }),
+      });
+
+      // Step 2: Upload file to signed URL
+      await fetch(response.upload_url, {
+        method: 'PUT',
+        body: file,
+        headers: {
+          'Content-Type': file.type,
+        },
+      });
+
+      return {
+        success: true,
+        message: 'File uploaded successfully',
+        documentId: response.document_id,
+      };
+    } catch (error) {
+      console.error('Error uploading file:', error);
+      throw error;
+    }
   },
 };
 

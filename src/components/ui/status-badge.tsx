@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { cn } from '@/lib/utils';
 import { StatusType } from '@/types';
@@ -8,7 +7,7 @@ interface StatusBadgeProps {
   className?: string;
 }
 
-const statusConfig = {
+const statusStyles: Record<StatusType, { color: string; label: string }> = {
   pending: {
     color: 'bg-status-pending/20 text-status-pending border-status-pending/30',
     label: 'Pending'
@@ -28,7 +27,7 @@ const statusConfig = {
 };
 
 const StatusBadge: React.FC<StatusBadgeProps> = ({ status, className }) => {
-  const { color, label } = statusConfig[status];
+  const { color, label } = statusStyles[status];
   
   return (
     <span 

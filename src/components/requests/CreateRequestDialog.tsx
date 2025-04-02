@@ -25,16 +25,18 @@ const requestFormSchema = z.object({
   auditId: z.string().min(1, { message: 'Audit is required' }),
   expectations: z.array(z.string()).default(['']),
   systemChecks: z.object({
-    checkMissingPages: z.boolean().default(false),
-    checkTamperedDocuments: z.boolean().default(false),
-    checkDocumentIds: z.boolean().default(false)
+    checkTamperedDocuments: z.boolean().default(true),
+    checkMissingPages: z.boolean().default(true),
+    checkRequiredSignatures: z.boolean().default(true),
+    checkCorrectDates: z.boolean().default(true),
+    checkRequiredDocument: z.boolean().default(true)
   }),
   requiredFiles: z.array(
     z.object({
       name: z.string().optional(),
       description: z.string().optional(),
     })
-  ).optional().default([])
+  ).default([])
 });
 
 type RequestFormValues = z.infer<typeof requestFormSchema>;
@@ -68,9 +70,11 @@ const CreateRequestDialog: React.FC<CreateRequestDialogProps> = ({
       requiredFiles: [{ name: '', description: '' }],
       expectations: [''],
       systemChecks: {
-        checkMissingPages: false,
-        checkTamperedDocuments: false,
-        checkDocumentIds: false
+        checkTamperedDocuments: true,
+        checkMissingPages: true,
+        checkRequiredSignatures: true,
+        checkCorrectDates: true,
+        checkRequiredDocument: true
       }
     }
   });
@@ -85,9 +89,11 @@ const CreateRequestDialog: React.FC<CreateRequestDialogProps> = ({
         requiredFiles: [{ name: '', description: '' }],
         expectations: [''],
         systemChecks: {
-          checkMissingPages: false,
-          checkTamperedDocuments: false,
-          checkDocumentIds: false
+          checkTamperedDocuments: true,
+          checkMissingPages: true,
+          checkRequiredSignatures: true,
+          checkCorrectDates: true,
+          checkRequiredDocument: true
         }
       });
       
@@ -101,12 +107,12 @@ const CreateRequestDialog: React.FC<CreateRequestDialogProps> = ({
 
   const { fields: requiredFilesFields, append: appendRequiredFile, remove: removeRequiredFile } = useFieldArray({
     control: form.control,
-    name: "requiredFiles" as keyof RequestFormValues
+    name: "requiredFiles" as const
   });
 
   const { fields: expectationFields, append: appendExpectation, remove: removeExpectation } = useFieldArray({
     control: form.control,
-    name: "expectations" as keyof RequestFormValues
+    name: "expectations" as const
   });
 
   const handleClientChange = (clientId: string) => {
@@ -129,14 +135,20 @@ const CreateRequestDialog: React.FC<CreateRequestDialogProps> = ({
       
       // Map system checks to hardcoded prompts
       const systemPrompts = [];
-      if (data.systemChecks.checkMissingPages) {
-        systemPrompts.push("system_prompt 1");
-      }
       if (data.systemChecks.checkTamperedDocuments) {
-        systemPrompts.push("system_prompt 2");
+        systemPrompts.push("Check if the document has been tampered with or modified after creation");
       }
-      if (data.systemChecks.checkDocumentIds) {
-        systemPrompts.push("system_prompt 3");
+      if (data.systemChecks.checkMissingPages) {
+        systemPrompts.push("Check for any missing pages in the document");
+      }
+      if (data.systemChecks.checkRequiredSignatures) {
+        systemPrompts.push("Verify that all required signatures are present and valid");
+      }
+      if (data.systemChecks.checkCorrectDates) {
+        systemPrompts.push("Validate that all dates in the document are correct and consistent");
+      }
+      if (data.systemChecks.checkRequiredDocument) {
+        systemPrompts.push("Confirm that the submitted document matches the required document type");
       }
 
       // Filter out empty expectations and join them
@@ -312,6 +324,23 @@ const CreateRequestDialog: React.FC<CreateRequestDialogProps> = ({
               <div className="space-y-2 rounded-md border p-4 bg-muted/20">
                 <FormField
                   control={form.control}
+                  name="systemChecks.checkTamperedDocuments"
+                  render={({ field }) => (
+                    <FormItem className="flex items-center space-x-2">
+                      <FormControl>
+                        <Checkbox
+                          checked={field.value}
+                          onCheckedChange={field.onChange}
+                        />
+                      </FormControl>
+                      <FormLabel className="text-sm font-normal">
+                        Check if the document is tampered
+                      </FormLabel>
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
                   name="systemChecks.checkMissingPages"
                   render={({ field }) => (
                     <FormItem className="flex items-center space-x-2">
@@ -329,7 +358,7 @@ const CreateRequestDialog: React.FC<CreateRequestDialogProps> = ({
                 />
                 <FormField
                   control={form.control}
-                  name="systemChecks.checkTamperedDocuments"
+                  name="systemChecks.checkRequiredSignatures"
                   render={({ field }) => (
                     <FormItem className="flex items-center space-x-2">
                       <FormControl>
@@ -339,14 +368,14 @@ const CreateRequestDialog: React.FC<CreateRequestDialogProps> = ({
                         />
                       </FormControl>
                       <FormLabel className="text-sm font-normal">
-                        Check for tampered documents
+                        Check for required signatures
                       </FormLabel>
                     </FormItem>
                   )}
                 />
                 <FormField
                   control={form.control}
-                  name="systemChecks.checkDocumentIds"
+                  name="systemChecks.checkCorrectDates"
                   render={({ field }) => (
                     <FormItem className="flex items-center space-x-2">
                       <FormControl>
@@ -356,7 +385,24 @@ const CreateRequestDialog: React.FC<CreateRequestDialogProps> = ({
                         />
                       </FormControl>
                       <FormLabel className="text-sm font-normal">
-                        Check for correct document IDs
+                        Check for correct dates
+                      </FormLabel>
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="systemChecks.checkRequiredDocument"
+                  render={({ field }) => (
+                    <FormItem className="flex items-center space-x-2">
+                      <FormControl>
+                        <Checkbox
+                          checked={field.value}
+                          onCheckedChange={field.onChange}
+                        />
+                      </FormControl>
+                      <FormLabel className="text-sm font-normal">
+                        Check if the submitted document is required
                       </FormLabel>
                     </FormItem>
                   )}
