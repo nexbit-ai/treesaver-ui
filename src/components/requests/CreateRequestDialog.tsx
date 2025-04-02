@@ -218,10 +218,10 @@ const CreateRequestDialog: React.FC<CreateRequestDialogProps> = ({
               name="description"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Description (Optional)</FormLabel>
+                  <FormLabel>Expectations (Optional)</FormLabel>
                   <FormControl>
                     <Textarea 
-                      placeholder="Please provide your Q1 2024 financial statements including balance sheet, income statement, and cash flow statement." 
+                      placeholder="The document should be in the format of a balance sheet, income statement, and cash flow statement." 
                       className="h-24"
                       {...field} 
                     />
