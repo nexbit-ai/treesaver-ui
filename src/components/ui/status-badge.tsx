@@ -13,7 +13,7 @@ const statusConfig = {
     color: 'bg-status-pending/20 text-status-pending border-status-pending/30',
     label: 'Pending'
   },
-  review: {
+  InReview: {
     color: 'bg-status-review/20 text-status-review border-status-review/30',
     label: 'In Review'
   },

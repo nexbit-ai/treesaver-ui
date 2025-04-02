@@ -389,18 +389,18 @@ export const apiService = {
   },
   
   // Request Status updates
-  updateRequestStatus: async (requestId: string, status: string) => {
+  updateRequestStatus: async (requestId: string, action: 'InReview' | 'Approved' | 'Rejected') => {
     if (USE_MOCK_RESPONSES) {
       await mockDelay();
       return {
         success: true,
-        message: `Status updated to ${status}`,
+        message: `Status updated to ${action}`,
         requestId
       };
     }
     return fetchApi(`/v1/firm/status/${requestId}`, {
       method: 'POST',
-      body: JSON.stringify({ status }),
+      body: JSON.stringify({ action }),
     });
   },
   
@@ -452,6 +452,39 @@ export const apiService = {
       };
     }
     return fetchApi(`/v1/firm/documents/${documentId}/download`);
+  },
+
+  // Analysis APIs
+  runAnalysis: async (requestId: string, prompt: string) => {
+    if (USE_MOCK_RESPONSES) {
+      await mockDelay();
+      return {
+        createdAt: "2025-04-01T19:13:45.649184+05:30",
+        message: "Analysis started",
+        runId: "mock_run_id",
+        status: "queued",
+        threadId: "mock_thread_id"
+      };
+    }
+    return fetchApi(`/v1/analysis/${requestId}`, {
+      method: 'POST',
+      body: JSON.stringify({ prompt }),
+    });
+  },
+
+  getAnalysisStatus: async (requestId: string, threadId: string, runId: string) => {
+    if (USE_MOCK_RESPONSES) {
+      await mockDelay();
+      return {
+        ThreadID: "mock_thread_id",
+        RunID: "mock_run_id",
+        Response: "Mock analysis response",
+        Status: "completed",
+        CreatedAt: "2025-04-01T19:13:45+05:30",
+        CompletedAt: "2025-04-01T19:13:47+05:30"
+      };
+    }
+    return fetchApi(`/v1/analysis/${requestId}/status?threadId=${threadId}&runId=${runId}`);
   },
 };
 

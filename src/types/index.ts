@@ -1,5 +1,5 @@
 // Existing types
-export type StatusType = 'pending' | 'review' | 'approved' | 'rejected';
+export type StatusType = 'pending' | 'inreview' | 'approved' | 'rejected';
 
 export interface UploadedFile {
   id: string;
@@ -19,9 +19,11 @@ export interface DocumentRequest {
   clientId: string;
   auditId: string;
   requiredFiles: Array<{
-    name: string;
+    name?: string;
     description?: string;
   }>;
+  auditor_expectation?: string;
+  system_prompt?: string;
 }
 
 // New types

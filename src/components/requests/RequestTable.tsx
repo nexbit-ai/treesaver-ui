@@ -21,6 +21,7 @@ import { Badge } from '@/components/ui/badge';
 import { Loader2 } from 'lucide-react';
 import { apiService } from '@/services/api';
 import { toast } from 'sonner';
+import { useQueryClient } from '@tanstack/react-query';
 
 interface RequestTableProps {
   requests: DocumentRequest[];
@@ -37,12 +38,32 @@ interface DownloadResponse {
   fileType: string;
 }
 
+interface AnalysisResponse {
+  createdAt: string;
+  message: string;
+  runId: string;
+  status: string;
+  threadId: string;
+}
+
+interface AnalysisStatusResponse {
+  ThreadID: string;
+  RunID: string;
+  Response: string;
+  Status: string;
+  CreatedAt: string;
+  CompletedAt: string;
+}
+
 const RequestTable: React.FC<RequestTableProps> = ({ requests, className, showApproveReject = false }) => {
   const [expandedRows, setExpandedRows] = useState<Set<string>>(new Set());
   const [documents, setDocuments] = useState<Record<string, any[]>>({});
   const [loadingDocuments, setLoadingDocuments] = useState<Set<string>>(new Set());
   const [testDialogOpen, setTestDialogOpen] = useState<string | null>(null);
   const { uploadFiles, isUploading, updateStatus, getDocuments } = useDocumentRequests();
+  const [isRunningTest, setIsRunningTest] = useState<Record<string, boolean>>({});
+  const [testResults, setTestResults] = useState<Record<string, AnalysisStatusResponse>>({});
+  const queryClient = useQueryClient();
   
   const toggleRow = async (requestId: string) => {
     const newExpandedRows = new Set(expandedRows);
@@ -74,6 +95,9 @@ const RequestTable: React.FC<RequestTableProps> = ({ requests, className, showAp
           // Close the upload dialog
           setTestDialogOpen(null);
           
+          // Update request status to InReview
+          await updateStatus({ requestId, action: 'InReview' });
+          
           // Refresh the documents list
           setLoadingDocuments(prev => new Set(prev).add(requestId));
           const docs = await getDocuments(requestId);
@@ -83,19 +107,23 @@ const RequestTable: React.FC<RequestTableProps> = ({ requests, className, showAp
             newSet.delete(requestId);
             return newSet;
           });
+
+          // Invalidate the document requests query to refresh the list
+          queryClient.invalidateQueries({ queryKey: ['documentRequests'] });
         }
       });
     } catch (error) {
       console.error('Error uploading files:', error);
+      toast.error('Failed to upload files');
     }
   };
   
   const handleApprove = (requestId: string) => {
-    updateStatus({ requestId, status: 'approved' });
+    updateStatus({ requestId, action: 'Approved' });
   };
 
   const handleReject = (requestId: string) => {
-    updateStatus({ requestId, status: 'rejected' });
+    updateStatus({ requestId, action: 'Rejected' });
   };
   
   const formatDate = (dateString: string) => {
@@ -137,6 +165,42 @@ const RequestTable: React.FC<RequestTableProps> = ({ requests, className, showAp
     } catch (error) {
       toast.error('Failed to download document');
       console.error('Download error:', error);
+    }
+  };
+
+  const handleRunTest = async (requestId: string, auditorExpectation: string, systemPrompt: string) => {
+    try {
+      setIsRunningTest(prev => ({ ...prev, [requestId]: true }));
+      
+      // Combine auditor expectation and system prompt
+      const prompt = `${auditorExpectation}\n\n${systemPrompt}`;
+      
+      // Start the analysis
+      const analysisResponse = await apiService.runAnalysis(requestId, prompt) as AnalysisResponse;
+      
+      // Wait for 5 seconds
+      await new Promise(resolve => setTimeout(resolve, 5000));
+      
+      // Check the status
+      const statusResponse = await apiService.getAnalysisStatus(
+        requestId,
+        analysisResponse.threadId,
+        analysisResponse.runId
+      ) as AnalysisStatusResponse;
+      
+      setTestResults(prev => ({ ...prev, [requestId]: statusResponse }));
+      
+      if (statusResponse.Status === 'completed') {
+        // TODO: Call the next API when it's ready
+        toast.success('Analysis completed successfully');
+      } else {
+        toast.error('Analysis failed or timed out');
+      }
+    } catch (error) {
+      console.error('Error running analysis:', error);
+      toast.error('Failed to run analysis');
+    } finally {
+      setIsRunningTest(prev => ({ ...prev, [requestId]: false }));
     }
   };
 
@@ -204,7 +268,7 @@ const RequestTable: React.FC<RequestTableProps> = ({ requests, className, showAp
                     </Badge>
                   </TableCell>
                   <TableCell className="text-right">
-                    {showApproveReject && request.status === 'review' ? (
+                    {showApproveReject && request.status === 'inreview' ? (
                       <div className="flex gap-2 justify-end">
                         <Button 
                           variant="outline" 
@@ -248,17 +312,87 @@ const RequestTable: React.FC<RequestTableProps> = ({ requests, className, showAp
                             className="h-8"
                             onClick={(e) => e.stopPropagation()}
                           >
-                            <PlayCircle className="h-3.5 w-3.5 mr-1" />
-                            Run Tests
+                            {showApproveReject ? (
+                              <>
+                                <PlayCircle className="h-3.5 w-3.5 mr-1" />
+                                Run Tests
+                              </>
+                            ) : (
+                              <>
+                                <Upload className="h-3.5 w-3.5 mr-1" />
+                                Upload
+                              </>
+                            )}
                           </Button>
                         </DialogTrigger>
                         <DialogContent className="max-w-2xl">
                           <DialogHeader>
-                            <DialogTitle>Run Tests for {request.title}</DialogTitle>
+                            <DialogTitle>
+                              {showApproveReject ? `Run Tests for ${request.title}` : request.title}
+                            </DialogTitle>
                           </DialogHeader>
-                          <div className="py-4">
-                            <p className="text-muted-foreground">Test modal content will be added here.</p>
-                          </div>
+                          {showApproveReject ? (
+                            <div className="py-4">
+                              {isRunningTest[request.id] ? (
+                                <div className="flex flex-col items-center justify-center py-8">
+                                  <Loader2 className="h-8 w-8 animate-spin text-muted-foreground mb-4" />
+                                  <p className="text-muted-foreground">Running analysis...</p>
+                                </div>
+                              ) : testResults[request.id] ? (
+                                <div className="space-y-4">
+                                  <div className="bg-muted p-4 rounded-lg">
+                                    <h4 className="font-medium mb-2">Analysis Result</h4>
+                                    <p className="text-sm text-muted-foreground whitespace-pre-wrap">
+                                      {testResults[request.id].Response}
+                                    </p>
+                                  </div>
+                                  <div className="flex justify-end">
+                                    <Button 
+                                      onClick={() => handleRunTest(
+                                        request.id,
+                                        request.auditor_expectation || '',
+                                        request.system_prompt || ''
+                                      )}
+                                    >
+                                      <PlayCircle className="h-4 w-4 mr-2" />
+                                      Run Again
+                                    </Button>
+                                  </div>
+                                </div>
+                              ) : (
+                                <div className="space-y-4">
+                                  <div className="bg-muted p-4 rounded-lg">
+                                    <h4 className="font-medium mb-2">Test Configuration</h4>
+                                    <p className="text-sm text-muted-foreground">
+                                      Auditor Expectation: {request.auditor_expectation || 'Not set'}
+                                    </p>
+                                    <p className="text-sm text-muted-foreground">
+                                      System Prompt: {request.system_prompt || 'Not set'}
+                                    </p>
+                                  </div>
+                                  <div className="flex justify-end">
+                                    <Button 
+                                      onClick={() => handleRunTest(
+                                        request.id,
+                                        request.auditor_expectation || '',
+                                        request.system_prompt || ''
+                                      )}
+                                    >
+                                      <PlayCircle className="h-4 w-4 mr-2" />
+                                      Run Test
+                                    </Button>
+                                  </div>
+                                </div>
+                              )}
+                            </div>
+                          ) : (
+                            <FileUploader 
+                              onFilesSelected={(files) => handleFilesSelected(request.id, files)} 
+                              requestId={request.id}
+                              isUploading={isUploading}
+                              readOnly={false}
+                            />
+                          )}
                         </DialogContent>
                       </Dialog>
                     )}
@@ -308,7 +442,7 @@ const RequestTable: React.FC<RequestTableProps> = ({ requests, className, showAp
                         )}
                         
                         <div className="flex justify-end mt-4">
-                          {showApproveReject && request.status === 'review' ? (
+                          {showApproveReject && request.status === 'inreview' ? (
                             <div className="flex gap-2">
                               <Button 
                                 variant="outline" 
@@ -337,17 +471,87 @@ const RequestTable: React.FC<RequestTableProps> = ({ requests, className, showAp
                             >
                               <DialogTrigger asChild>
                                 <Button onClick={(e) => e.stopPropagation()}>
-                                  <PlayCircle className="h-4 w-4 mr-2" />
-                                  Run Tests
+                                  {showApproveReject ? (
+                                    <>
+                                      <PlayCircle className="h-4 w-4 mr-2" />
+                                      Run Tests
+                                    </>
+                                  ) : (
+                                    <>
+                                      <Upload className="h-4 w-4 mr-2" />
+                                      Upload Documents
+                                    </>
+                                  )}
                                 </Button>
                               </DialogTrigger>
                               <DialogContent className="max-w-2xl">
                                 <DialogHeader>
-                                  <DialogTitle>Run Tests for {request.title}</DialogTitle>
+                                  <DialogTitle>
+                                    {showApproveReject ? `Run Tests for ${request.title}` : request.title}
+                                  </DialogTitle>
                                 </DialogHeader>
-                                <div className="py-4">
-                                  <p className="text-muted-foreground">Test modal content will be added here.</p>
-                                </div>
+                                {showApproveReject ? (
+                                  <div className="py-4">
+                                    {isRunningTest[request.id] ? (
+                                      <div className="flex flex-col items-center justify-center py-8">
+                                        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground mb-4" />
+                                        <p className="text-muted-foreground">Running analysis...</p>
+                                      </div>
+                                    ) : testResults[request.id] ? (
+                                      <div className="space-y-4">
+                                        <div className="bg-muted p-4 rounded-lg">
+                                          <h4 className="font-medium mb-2">Analysis Result</h4>
+                                          <p className="text-sm text-muted-foreground whitespace-pre-wrap">
+                                            {testResults[request.id].Response}
+                                          </p>
+                                        </div>
+                                        <div className="flex justify-end">
+                                          <Button 
+                                            onClick={() => handleRunTest(
+                                              request.id,
+                                              request.auditor_expectation || '',
+                                              request.system_prompt || ''
+                                            )}
+                                          >
+                                            <PlayCircle className="h-4 w-4 mr-2" />
+                                            Run Again
+                                          </Button>
+                                        </div>
+                                      </div>
+                                    ) : (
+                                      <div className="space-y-4">
+                                        <div className="bg-muted p-4 rounded-lg">
+                                          <h4 className="font-medium mb-2">Test Configuration</h4>
+                                          <p className="text-sm text-muted-foreground">
+                                            Auditor Expectation: {request.auditor_expectation || 'Not set'}
+                                          </p>
+                                          <p className="text-sm text-muted-foreground">
+                                            System Prompt: {request.system_prompt || 'Not set'}
+                                          </p>
+                                        </div>
+                                        <div className="flex justify-end">
+                                          <Button 
+                                            onClick={() => handleRunTest(
+                                              request.id,
+                                              request.auditor_expectation || '',
+                                              request.system_prompt || ''
+                                            )}
+                                          >
+                                            <PlayCircle className="h-4 w-4 mr-2" />
+                                            Run Test
+                                          </Button>
+                                        </div>
+                                      </div>
+                                    )}
+                                  </div>
+                                ) : (
+                                  <FileUploader 
+                                    onFilesSelected={(files) => handleFilesSelected(request.id, files)} 
+                                    requestId={request.id}
+                                    isUploading={isUploading}
+                                    readOnly={false}
+                                  />
+                                )}
                               </DialogContent>
                             </Dialog>
                           )}

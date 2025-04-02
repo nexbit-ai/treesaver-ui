@@ -83,7 +83,12 @@ export const useDocumentRequests = (auditId?: string) => {
 
   // Create document request
   const createRequestMutation = useMutation({
-    mutationFn: ({ auditId, data }: { auditId: string, data: { name: string, expiry_date: string, description?: string } }) => {
+    mutationFn: ({ auditId, data }: { auditId: string, data: { 
+      name: string, 
+      expiry_date: string,
+      auditor_expectation: string,
+      system_prompt: string 
+    } }) => {
       return apiService.createDocumentRequest(auditId, data);
     },
     onSuccess: () => {
@@ -100,8 +105,8 @@ export const useDocumentRequests = (auditId?: string) => {
 
   // Update request status
   const updateStatusMutation = useMutation({
-    mutationFn: ({ requestId, status }: { requestId: string, status: StatusType }) => {
-      return apiService.updateRequestStatus(requestId, status);
+    mutationFn: ({ requestId, action }: { requestId: string, action: 'InReview' | 'Approved' | 'Rejected' }) => {
+      return apiService.updateRequestStatus(requestId, action);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['documentRequests'] });

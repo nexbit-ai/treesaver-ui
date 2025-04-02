@@ -69,7 +69,7 @@ export const documentRequests: DocumentRequest[] = [
     title: 'Business Plan',
     description: 'Please provide a detailed business plan including market analysis, financial projections, and expansion strategy.',
     requiredFiles: ['Business Plan', 'Financial Projections', 'Market Analysis'],
-    status: 'review',
+    status: 'InReview',
     dueDate: '2023-12-20',
     createdAt: '2023-11-28',
     updatedAt: '2023-11-28',

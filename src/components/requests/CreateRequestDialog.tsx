@@ -16,6 +16,7 @@ import { useAudits } from '@/hooks/useAudits';
 import { toast } from 'sonner';
 import { apiService } from '@/services/api';
 import { Checkbox } from '@/components/ui/checkbox';
+import { useQueryClient } from '@tanstack/react-query';
 
 const requestFormSchema = z.object({
   title: z.string().min(3, { message: 'Request title is required' }),
@@ -55,6 +56,7 @@ const CreateRequestDialog: React.FC<CreateRequestDialogProps> = ({
   const { audits, getAuditsByClientId } = useAudits(selectedClientId);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [filteredAudits, setFilteredAudits] = useState<Audit[]>([]);
+  const queryClient = useQueryClient();
 
   const form = useForm<RequestFormValues>({
     resolver: zodResolver(requestFormSchema),
@@ -148,6 +150,9 @@ const CreateRequestDialog: React.FC<CreateRequestDialogProps> = ({
         auditor_expectation: auditorExpectations,
         system_prompt: systemPrompts.join('\n')
       });
+      
+      // Invalidate the document requests query to refresh the list
+      queryClient.invalidateQueries({ queryKey: ['documentRequests'] });
       
       toast.success("Document request created successfully");
       onOpenChange(false);

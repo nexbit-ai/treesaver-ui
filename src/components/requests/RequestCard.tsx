@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
@@ -27,11 +26,11 @@ const RequestCard: React.FC<RequestCardProps> = ({ request, className, showAppro
   };
 
   const handleApprove = () => {
-    updateStatus({ requestId: request.id, status: 'approved' });
+    updateStatus({ requestId: request.id, action: 'Approved' });
   };
 
   const handleReject = () => {
-    updateStatus({ requestId: request.id, status: 'rejected' });
+    updateStatus({ requestId: request.id, action: 'Rejected' });
   };
   
   const formatDate = (dateString: string) => {
