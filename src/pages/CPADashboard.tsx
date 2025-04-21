@@ -73,14 +73,16 @@ const CPADashboard = () => {
 
   const getStatusIcon = (status: string) => {
     switch (status) {
-      case 'pending':
+      case 'PENDING':
         return <Clock className="h-4 w-4" />;
-      case 'InReview':
+      case 'IN_REVIEW':
         return <Loader2 className="h-4 w-4 animate-spin" />;
-      case 'approved':
+      case 'APPROVED':
         return <CheckCircle className="h-4 w-4" />;
-      case 'rejected':
-        return <AlertCircle className="h-4 w-4" />;
+      case 'PUSH_BACK':
+        return <AlertCircle className="h-4 w-4 text-red-500" />;
+      case 'RE_SUBMITTED':
+        return <Loader2 className="h-4 w-4 animate-spin text-purple-500" />;
       default:
         return null;
     }
@@ -96,7 +98,7 @@ const CPADashboard = () => {
       <header className="sticky top-0 z-10 bg-background/80 backdrop-blur-lg border-b">
         <div className="container mx-auto px-4 py-4 flex items-center justify-between">
           <div>
-            <h1 className="text-2xl font-semibold tracking-tight">CA Dashboard</h1>
+            <h1 className="text-2xl font-semibold tracking-tight">Vasan & Sampath Dashboard</h1>
             <p className="text-muted-foreground">Manage client document requests</p>
           </div>
           <div className="flex gap-2">

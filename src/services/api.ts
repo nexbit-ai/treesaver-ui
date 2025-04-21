@@ -1,12 +1,12 @@
 // Central file for API communication
 
 import { toast } from "sonner";
-import { Audit, Client, DocumentRequest } from "@/types";
+import { Audit, Client, DocumentRequest, StatusType } from "@/types";
 import { TestCaseResult } from "@/components/requests/TestCaseResults";
 
 // Base API URL that can be configured from environment variables
 // Set a dummy host as default for now, to be changed later by user
-const API_BASE_URL = "http://3.110.206.111:8080"
+const API_BASE_URL = "http://43.204.236.42:8080"
 
 // Flag to determine if we should use mock responses
 const USE_MOCK_RESPONSES = false;
@@ -134,11 +134,7 @@ const mapRequestResponse = (requestData: any): DocumentRequest => ({
   id: requestData.request_id,
   title: requestData.request_name,
   dueDate: requestData.expired_on,
-  status: requestData.status === "PENDING" ? "pending" : 
-          requestData.status === "IN-REVIEW" ? "InReview" :
-          requestData.status === "APPROVED" ? "approved" :
-          requestData.status === "REJECTED" ? "rejected" :
-          requestData.status.toLowerCase(),
+  status: requestData.status as StatusType,
   createdAt: requestData.created_at,
   updatedAt: requestData.updated_at,
   clientId: "123e4567-e89b-12d3-a456-426614174000", // Default client ID
@@ -322,19 +318,24 @@ export const apiService = {
   },
   
   // File uploads - using FormData for file upload
-  uploadFiles: async (requestId: string, files: File[]) => {
+  uploadFiles: async (requestId: string, files: File | File[]) => {
     if (USE_MOCK_RESPONSES) {
       await mockDelay(1000);
       return {
         success: true,
         message: 'Files uploaded successfully',
-        fileIds: files.map((_, index) => `mock-file-id-${index}`)
+        fileIds: Array.isArray(files) 
+          ? files.map((_, index) => `mock-file-id-${index}`)
+          : [`mock-file-id-0`]
       };
     }
     
     try {
+      // Ensure files is always an array
+      const filesArray = Array.isArray(files) ? files : [files];
+      
       // Step 1: Get signed URLs
-      const filesData = files.map(file => ({
+      const filesData = filesArray.map(file => ({
         file_name: file.name,
         file_type: file.type,
         file_size: file.size,
@@ -350,7 +351,7 @@ export const apiService = {
       });
 
       // Step 2: Upload files to signed URLs
-      const uploadPromises = files.map(async (file) => {
+      const uploadPromises = filesArray.map(async (file) => {
         const signedUrl = response.upload_urls[file.name];
         if (!signedUrl) {
           throw new Error(`No signed URL found for file: ${file.name}`);
@@ -400,7 +401,7 @@ export const apiService = {
   },
   
   // Request Status updates
-  updateRequestStatus: async (requestId: string, action: 'InReview' | 'Approved' | 'Rejected') => {
+  updateRequestStatus: async (requestId: string, action: StatusType) => {
     if (USE_MOCK_RESPONSES) {
       await mockDelay();
       return {
@@ -440,13 +441,113 @@ export const apiService = {
     fetchApi<T>(endpoint, { method: 'DELETE' }),
 
   // Document APIs
-  getDocumentsByRequestId: async (requestId: string) => {
+  getDocuments: async (requestId: string) => {
     if (USE_MOCK_RESPONSES) {
       await mockDelay();
-      return [];
+      return [
+        {
+          id: 'mock-doc-1',
+          name: 'Document 1.pdf',
+          size: 1024 * 1024,
+          uploadedAt: new Date().toISOString(),
+          url: '/files/mock-doc-1.pdf'
+        },
+        {
+          id: 'mock-doc-2',
+          name: 'Document 2.pdf',
+          size: 2 * 1024 * 1024,
+          uploadedAt: new Date().toISOString(),
+          url: '/files/mock-doc-2.pdf'
+        }
+      ];
     }
-    const response = await fetchApi(`/v1/client/${requestId}/documents`);
-    return (response as any[]).map(mapDocumentResponse);
+    const response = await fetchApi<Array<{
+      document_id: string;
+      document_name: string;
+      file_size: number;
+      uploaded_at: string;
+      url?: string;
+    }>>(`/v1/client/${requestId}/documents`);
+    return response.map(doc => ({
+      id: doc.document_id,
+      name: doc.document_name,
+      size: doc.file_size,
+      uploadedAt: doc.uploaded_at,
+      url: doc.url
+    }));
+  },
+
+  // Request Timeline API
+  getRequestTimeline: async (requestId: string) => {
+    if (USE_MOCK_RESPONSES) {
+      await mockDelay();
+      return [
+        {
+          id: "db0620f9-cb3e-47ba-b8a2-5b851e929370",
+          request_id: requestId,
+          status: "APPROVED",
+          comment: "Approved by manager",
+          documents: [],
+          created_at: new Date(Date.now() - 1000 * 60 * 10).toISOString() // 10 minutes ago
+        },
+        {
+          id: "d34973c9-f84d-40f4-a87b-49b525e2fb53",
+          request_id: requestId,
+          status: "RE_SUBMITTED",
+          comment: "Resubmitted with corrected documents",
+          documents: [],
+          created_at: new Date(Date.now() - 1000 * 60 * 60).toISOString() // 1 hour ago
+        },
+        {
+          id: "e6696dcc-2363-4394-9caa-3e541585005b",
+          request_id: requestId,
+          status: "PUSH_BACK",
+          comment: "Missing important information",
+          documents: [],
+          created_at: new Date(Date.now() - 1000 * 60 * 60 * 24).toISOString() // 1 day ago
+        },
+        {
+          id: "757fbd60-154a-4333-bc3a-dcb37bcc1146",
+          request_id: requestId,
+          status: "IN_REVIEW",
+          comment: "Initial document review",
+          documents: [
+            {
+              document_id: "bf50a657-6472-460a-b110-e4507583b155",
+              request_id: requestId,
+              document_name: "Invoice_1.png",
+              aws_location_id: `requests/${requestId}/documents/bf50a657-6472-460a-b110-e4507583b155/Invoice_1.png`,
+              file_type: "image/png",
+              file_size: 423899,
+              status: "",
+              uploaded_at: new Date(Date.now() - 1000 * 60 * 60 * 24 * 2).toISOString(), // 2 days ago
+              updated_at: new Date(Date.now() - 1000 * 60 * 60 * 24 * 2).toISOString() // 2 days ago
+            },
+            {
+              document_id: "f893c6e1-acc1-4293-9934-c10ba15d2fb6",
+              request_id: requestId,
+              document_name: "Statement_1.png",
+              aws_location_id: `requests/${requestId}/documents/f893c6e1-acc1-4293-9934-c10ba15d2fb6/Statement_1.png`,
+              file_type: "image/png",
+              file_size: 2170302,
+              status: "",
+              uploaded_at: new Date(Date.now() - 1000 * 60 * 60 * 24 * 2).toISOString(), // 2 days ago
+              updated_at: new Date(Date.now() - 1000 * 60 * 60 * 24 * 2).toISOString() // 2 days ago
+            }
+          ],
+          created_at: new Date(Date.now() - 1000 * 60 * 60 * 24 * 2).toISOString() // 2 days ago
+        },
+        {
+          id: "8c871157-5be2-47cf-9841-9b3a8cdfad07",
+          request_id: requestId,
+          status: "PENDING",
+          comment: "Request created",
+          documents: [],
+          created_at: new Date(Date.now() - 1000 * 60 * 60 * 24 * 5).toISOString() // 5 days ago
+        }
+      ];
+    }
+    return fetchApi(`/v1/common/request-timeline?requestID=${requestId}`);
   },
 
   // Add new download method
@@ -559,6 +660,31 @@ export const apiService = {
       console.error('Error uploading file:', error);
       throw error;
     }
+  },
+
+  // Create new request
+  createRequest: async (data: {
+    title: string;
+    description?: string;
+    dueDate: string;
+    requiredFiles: string[];
+    clientId: string;
+    auditId: string;
+    status: StatusType;
+  }) => {
+    if (USE_MOCK_RESPONSES) {
+      await mockDelay();
+      return {
+        id: 'mock-request-id',
+        ...data,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString()
+      };
+    }
+    return fetchApi('/v1/firm/requests', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
   },
 };
 

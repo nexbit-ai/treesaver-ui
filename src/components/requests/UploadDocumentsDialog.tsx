@@ -47,7 +47,7 @@ const UploadDocumentsDialog: React.FC<UploadDocumentsDialogProps> = ({
       );
 
       // Update request status
-      await apiService.updateRequestStatus(request.id, 'InReview');
+      await apiService.updateRequestStatus(request.id, 'IN_REVIEW');
 
       // Fetch test results
       setIsLoadingResults(true);

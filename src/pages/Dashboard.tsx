@@ -20,27 +20,33 @@ const Dashboard = () => {
   const [isLoadingAudit, setIsLoadingAudit] = useState(false);
   const isMobile = useIsMobile();
   
-  const { requests, isLoading, getRequestsByStatus } = useDocumentRequests(auditId);
+  // Validate auditId before using it
+  const validatedAuditId = auditId || null;
+  
+  const { requests, isLoading, getRequestsByStatus } = useDocumentRequests(validatedAuditId);
   const filteredRequests = getRequestsByStatus(activeTab);
   
   const statusCounts = {
     all: requests.length,
-    pending: requests.filter(req => req.status === 'pending').length,
-    InReview: requests.filter(req => req.status === 'InReview').length,
-    approved: requests.filter(req => req.status === 'approved').length,
-    rejected: requests.filter(req => req.status === 'rejected').length,
+    PENDING: requests.filter(req => req.status === 'PENDING').length,
+    IN_REVIEW: requests.filter(req => req.status === 'IN_REVIEW').length,
+    APPROVED: requests.filter(req => req.status === 'APPROVED').length,
+    PUSH_BACK: requests.filter(req => req.status === 'PUSH_BACK').length,
+    RE_SUBMITTED: requests.filter(req => req.status === 'RE_SUBMITTED').length,
   };
   
   const getStatusIcon = (status: string) => {
     switch (status) {
-      case 'pending':
+      case 'PENDING':
         return <Clock className="h-4 w-4" />;
-      case 'InReview':
-        return <Loader2 className="h-4 w-4" />;
-      case 'approved':
+      case 'IN_REVIEW':
+        return <Loader2 className="h-4 w-4 animate-spin" />;
+      case 'APPROVED':
         return <CheckCircle className="h-4 w-4" />;
-      case 'rejected':
-        return <AlertCircle className="h-4 w-4 animate-spin" />;
+      case 'PUSH_BACK':
+        return <AlertCircle className="h-4 w-4 text-red-500" />;
+      case 'RE_SUBMITTED':
+        return <Loader2 className="h-4 w-4 animate-spin text-purple-500" />;
       default:
         return null;
     }
@@ -54,11 +60,15 @@ const Dashboard = () => {
   // Fetch audit requests when auditId changes
   useEffect(() => {
     const fetchAuditData = async () => {
-      if (!auditId) return;
+      if (!validatedAuditId) {
+        console.warn('No audit ID provided');
+        return;
+      }
       
       setIsLoadingAudit(true);
       try {
-        const auditRequests = await apiService.getRequestsByAuditId(auditId);
+        console.log('Fetching audit requests for auditId:', validatedAuditId);
+        const auditRequests = await apiService.getRequestsByAuditId(validatedAuditId);
         setAudit(auditRequests as unknown as Audit);
       } catch (error) {
         console.error('Error fetching audit details:', error);
@@ -68,7 +78,7 @@ const Dashboard = () => {
     };
 
     fetchAuditData();
-  }, [auditId]);
+  }, [validatedAuditId]);
 
   return (
     <div className="min-h-screen bg-background flex flex-col">
@@ -114,32 +124,39 @@ const Dashboard = () => {
                     {statusCounts.all}
                   </span>
                 </TabsTrigger>
-                <TabsTrigger value="pending" className="flex items-center justify-center gap-1.5">
+                <TabsTrigger value="PENDING" className="flex items-center justify-center gap-1.5">
                   <Clock className="h-3.5 w-3.5 mr-1 opacity-70" />
                   Pending
                   <span className="text-xs bg-muted rounded-full px-2 py-0.5">
-                    {statusCounts.pending}
+                    {statusCounts.PENDING}
                   </span>
                 </TabsTrigger>
-                <TabsTrigger value="InReview" className="flex items-center justify-center gap-1.5">
+                <TabsTrigger value="IN_REVIEW" className="flex items-center justify-center gap-1.5">
                   <Loader2 className="h-3.5 w-3.5 mr-1 opacity-70" />
                   In Review
                   <span className="text-xs bg-muted rounded-full px-2 py-0.5">
-                    {statusCounts.InReview}
+                    {statusCounts.IN_REVIEW}
                   </span>
                 </TabsTrigger>
-                <TabsTrigger value="approved" className="flex items-center justify-center gap-1.5">
+                <TabsTrigger value="APPROVED" className="flex items-center justify-center gap-1.5">
                   <CheckCircle className="h-3.5 w-3.5 mr-1 opacity-70" />
                   Approved
                   <span className="text-xs bg-muted rounded-full px-2 py-0.5">
-                    {statusCounts.approved}
+                    {statusCounts.APPROVED}
                   </span>
                 </TabsTrigger>
-                <TabsTrigger value="rejected" className="flex items-center justify-center gap-1.5">
+                <TabsTrigger value="PUSH_BACK" className="flex items-center justify-center gap-1.5">
                   <AlertCircle className="h-3.5 w-3.5 mr-1 opacity-70" />
-                  Rejected
+                  Pushed-Back
                   <span className="text-xs bg-muted rounded-full px-2 py-0.5">
-                    {statusCounts.rejected}
+                    {statusCounts.PUSH_BACK}
+                  </span>
+                </TabsTrigger>
+                <TabsTrigger value="RE_SUBMITTED" className="flex items-center justify-center gap-1.5">
+                  <Loader2 className="h-3.5 w-3.5 mr-1 opacity-70" />
+                  Re-Submitted
+                  <span className="text-xs bg-muted rounded-full px-2 py-0.5">
+                    {statusCounts.RE_SUBMITTED}
                   </span>
                 </TabsTrigger>
               </TabsList>

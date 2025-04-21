@@ -8,6 +8,7 @@ import { AuthProvider } from "@/contexts/AuthContext";
 import Index from "./pages/Index";
 import Dashboard from "./pages/Dashboard";
 import CPADashboard from "./pages/CPADashboard";
+import ExcelMapper from "./pages/ExcelMapper";
 import NotFound from "./pages/NotFound";
 
 // Create a QueryClient instance outside of the component
@@ -33,6 +34,7 @@ const App: React.FC = () => {
               <Route path="/dashboard" element={<Dashboard />} />
               <Route path="/dashboard/:auditId" element={<Dashboard />} />
               <Route path="/cpa-dashboard" element={<CPADashboard />} />
+              <Route path="/excel-mapper" element={<ExcelMapper />} />
               {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
               <Route path="*" element={<NotFound />} />
             </Routes>

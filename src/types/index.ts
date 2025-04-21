@@ -1,5 +1,23 @@
 // Existing types
-export type StatusType = 'pending' | 'InReview' | 'approved' | 'rejected';
+export type StatusType = 'PENDING' | 'IN_REVIEW' | 'APPROVED' | 'PUSH_BACK' | 'RE_SUBMITTED';
+
+// Mapping for API statuses to frontend display
+export const STATUS_DISPLAY_MAP: Record<StatusType, string> = {
+  'PENDING': 'Pending',
+  'IN_REVIEW': 'In Review',
+  'APPROVED': 'Approved',
+  'PUSH_BACK': 'Pushed-Back',
+  'RE_SUBMITTED': 'Re-Submitted'
+};
+
+// Mapping for status colors
+export const STATUS_COLOR_MAP: Record<StatusType, { bg: string; text: string; border: string }> = {
+  'PENDING': { bg: 'bg-yellow-100', text: 'text-yellow-800', border: 'border-yellow-200' },
+  'IN_REVIEW': { bg: 'bg-blue-100', text: 'text-blue-800', border: 'border-blue-200' },
+  'APPROVED': { bg: 'bg-green-100', text: 'text-green-800', border: 'border-green-200' },
+  'PUSH_BACK': { bg: 'bg-red-100', text: 'text-red-800', border: 'border-red-200' },
+  'RE_SUBMITTED': { bg: 'bg-purple-100', text: 'text-purple-800', border: 'border-purple-200' }
+};
 
 export interface UploadedFile {
   id: string;
@@ -7,6 +25,12 @@ export interface UploadedFile {
   size: number;
   uploadedAt: string;
   url: string;
+}
+
+export interface TestResult {
+  testCaseName: string;
+  result: 'pass' | 'fail';
+  files: string;
 }
 
 export interface DocumentRequest {
@@ -26,6 +50,8 @@ export interface DocumentRequest {
   }>;
   auditor_expectation?: string;
   system_prompt?: string;
+  documents?: Document[];
+  testResults?: TestResult[];
 }
 
 // New types

@@ -1,11 +1,11 @@
-
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { Button } from "@/components/ui/button";
 import { useAuth } from '@/contexts/AuthContext';
 import { 
   LogOut,
-  User
+  User,
+  FileSpreadsheet
 } from 'lucide-react';
 
 const Header: React.FC = () => {
@@ -23,18 +23,26 @@ const Header: React.FC = () => {
         
         <div className="flex items-center gap-4">
           {isAuthenticated ? (
-            <div className="flex items-center gap-2 text-sm">
-              <span className="hidden md:inline-block">Welcome, {user?.name}</span>
-              <Button 
-                variant="ghost" 
-                size="icon"
-                className="rounded-full"
-                onClick={() => logout()}
-              >
-                <LogOut className="h-4 w-4" />
-                <span className="sr-only">Logout</span>
-              </Button>
-            </div>
+            <>
+              <Link to="/excel-mapper">
+                <Button variant="outline" size="sm" className="flex items-center gap-2">
+                  <FileSpreadsheet className="h-4 w-4" />
+                  Excel Mapper
+                </Button>
+              </Link>
+              <div className="flex items-center gap-2 text-sm">
+                <span className="hidden md:inline-block">Welcome, {user?.name}</span>
+                <Button 
+                  variant="ghost" 
+                  size="icon"
+                  className="rounded-full"
+                  onClick={() => logout()}
+                >
+                  <LogOut className="h-4 w-4" />
+                  <span className="sr-only">Logout</span>
+                </Button>
+              </div>
+            </>
           ) : (
             <Button asChild>
               <Link to="/login">

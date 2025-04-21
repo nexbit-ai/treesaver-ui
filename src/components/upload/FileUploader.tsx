@@ -1,7 +1,7 @@
 import React, { useState, useRef } from 'react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
-import { Upload, X, Check, FileIcon } from 'lucide-react';
+import { Upload, X, Check, FileIcon, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 
 // Allowed file types with proper MIME types
@@ -26,7 +26,7 @@ const FILE_TYPE_MAP: Record<string, string> = {
 };
 
 interface FileUploaderProps {
-  onFilesSelected: (files: File[]) => void;
+  onFilesSelected: (files: File[], requestId: string) => void;
   requestId: string;
   className?: string;
   isUploading?: boolean;
@@ -107,39 +107,25 @@ const FileUploader: React.FC<FileUploaderProps> = ({
   const handleDrop = (e: React.DragEvent<HTMLDivElement>) => {
     e.preventDefault();
     setIsDragging(false);
-    if (!readOnly) {
-      processFiles(e.dataTransfer.files);
-    }
+    processFiles(e.dataTransfer.files);
   };
   
   const handleFileInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (!readOnly) {
-      processFiles(e.target.files);
-      // Clear the input value to allow selecting the same file again
-      if (fileInputRef.current) {
-        fileInputRef.current.value = '';
-      }
-    }
-  };
-  
-  const handleButtonClick = () => {
-    if (fileInputRef.current && !readOnly) {
-      fileInputRef.current.click();
+    processFiles(e.target.files);
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
     }
   };
   
   const removeFile = (index: number) => {
-    if (!readOnly) {
-      const newFiles = [...selectedFiles];
-      newFiles.splice(index, 1);
-      setSelectedFiles(newFiles);
-    }
+    const newFiles = [...selectedFiles];
+    newFiles.splice(index, 1);
+    setSelectedFiles(newFiles);
   };
-
-  const handleUpload = () => {
-    if (selectedFiles.length > 0) {
-      onFilesSelected(selectedFiles);
-    }
+  
+  const handleUpload = async () => {
+    if (selectedFiles.length === 0) return;
+    onFilesSelected(selectedFiles, requestId);
   };
 
   const getFileTypeLabel = (file: File) => {
@@ -169,130 +155,81 @@ const FileUploader: React.FC<FileUploaderProps> = ({
     <div className={cn('space-y-4', className)}>
       <div
         className={cn(
-          'border-2 border-dashed rounded-xl p-8 transition-all duration-300 bg-background',
-          isDragging ? 'border-primary bg-primary/5 scale-[1.01]' : 'border-border',
-          'flex flex-col items-center justify-center text-center cursor-pointer'
+          'border-2 border-dashed rounded-lg p-8 text-center cursor-pointer transition-all duration-200',
+          isDragging ? 'border-primary bg-primary/5 scale-[1.01]' : 'border-muted-foreground/25',
+          'hover:border-primary hover:bg-primary/5 active:scale-[0.99]',
+          readOnly && 'cursor-not-allowed opacity-50'
         )}
         onDragOver={handleDragOver}
         onDragLeave={handleDragLeave}
         onDrop={handleDrop}
-        onClick={handleButtonClick}
+        onClick={() => !readOnly && fileInputRef.current?.click()}
       >
         <input
-          type="file"
           ref={fileInputRef}
-          className="hidden"
+          type="file"
           multiple
-          accept=".pdf,.jpg,.jpeg,.png,.xlsx"
+          accept={ALLOWED_TYPES.join(',')}
           onChange={handleFileInputChange}
-          aria-label="File upload"
+          className="hidden"
           disabled={readOnly}
         />
-        
-        <div className={cn(
-          'w-16 h-16 rounded-full flex items-center justify-center mb-4 transition-all duration-300',
-          isDragging ? 'bg-primary/20' : 'bg-muted'
-        )}>
-          <Upload 
-            className={cn(
-              'w-8 h-8 transition-all duration-300', 
+        <div className="space-y-2">
+          <div className={cn(
+            'w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4 transition-colors',
+            isDragging ? 'bg-primary/20' : 'bg-muted'
+          )}>
+            <Upload className={cn(
+              'h-8 w-8 transition-colors',
               isDragging ? 'text-primary' : 'text-muted-foreground'
-            )}
-          />
+            )} />
+          </div>
+          <p className="text-sm text-muted-foreground">
+            Drag and drop files here, or click to select files
+          </p>
+          <p className="text-xs text-muted-foreground">
+            Supported formats: PDF, DOC, DOCX, XLS, XLSX (max 10MB each)
+          </p>
         </div>
-        
-        <h3 className="text-lg font-medium mb-1">Drag and drop files here</h3>
-        <p className="text-muted-foreground text-sm mb-4">
-          or click to browse (PDF, JPEG, PNG, XLSX)
-        </p>
-        
-        <Button 
-          variant="outline" 
-          className="group hover:bg-primary hover:text-primary-foreground transition-all"
-          disabled={readOnly}
-        >
-          <Upload className="mr-2 h-4 w-4 group-hover:scale-110 transition-all" />
-          Select Files
-        </Button>
       </div>
       
       {selectedFiles.length > 0 && (
-        <div className="space-y-3 animate-fade-in">
-          <div className="text-sm font-medium flex justify-between items-center">
-            <span>Selected Files ({selectedFiles.length})</span>
-            {selectedFiles.length > 0 && !readOnly && (
-              <Button 
-                variant="ghost" 
-                size="sm" 
-                className="h-8 px-2 text-xs text-muted-foreground hover:text-destructive"
-                onClick={() => {
-                  setSelectedFiles([]);
-                }}
-              >
-                Clear All
-              </Button>
-            )}
-          </div>
-          
-          <div className="grid gap-2">
+        <div className="space-y-2">
+          <h4 className="text-sm font-medium">Selected Files</h4>
+          <div className="space-y-2">
             {selectedFiles.map((file, index) => (
-              <div 
-                key={`${file.name}-${index}`}
-                className="bg-card border rounded-lg p-3 flex items-center justify-between animate-slide-in shadow-sm"
-                style={{ animationDelay: `${index * 50}ms` }}
+              <div
+                key={index}
+                className="flex items-center justify-between p-2 rounded-lg bg-muted"
               >
-                <div className="flex items-center">
-                  <div className="w-8 h-8 rounded bg-muted flex items-center justify-center mr-3">
-                    <FileIcon className="w-4 h-4 text-foreground/70" />
-                  </div>
-                  <div className="overflow-hidden">
-                    <p className="text-sm font-medium truncate" title={file.name}>
-                      {file.name}
-                    </p>
-                    <div className="flex items-center text-xs text-muted-foreground mt-0.5">
-                      <span className="whitespace-nowrap">{getFileTypeLabel(file)}</span>
-                      <span className="mx-1">•</span>
-                      <span className="whitespace-nowrap">
-                        {formatFileSize(file.size)}
-                      </span>
-                    </div>
-                  </div>
+                <div className="flex items-center space-x-2">
+                  <FileIcon className="h-4 w-4 text-muted-foreground" />
+                  <span className="text-sm">{file.name}</span>
                 </div>
-                {!readOnly && (
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="h-8 w-8 rounded-full hover:bg-destructive/10 hover:text-destructive"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      removeFile(index);
-                    }}
-                    disabled={isUploading}
-                  >
-                    <X className="h-4 w-4" />
-                    <span className="sr-only">Remove file</span>
-                  </Button>
-                )}
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => removeFile(index)}
+                  disabled={readOnly}
+                >
+                  <X className="h-4 w-4" />
+                </Button>
               </div>
             ))}
           </div>
-          
-          <Button 
-            className="w-full mt-4 transition-all hover:shadow-md"
-            disabled={selectedFiles.length === 0 || isUploading || readOnly}
+          <Button
+            className="w-full"
             onClick={handleUpload}
+            disabled={isUploading || readOnly}
           >
             {isUploading ? (
               <>
-                <svg className="animate-spin -ml-1 mr-3 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                </svg>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                 Uploading...
               </>
             ) : (
               <>
-                <Check className="mr-2 h-4 w-4" />
+                <Upload className="mr-2 h-4 w-4" />
                 Upload Files
               </>
             )}

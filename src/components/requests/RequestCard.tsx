@@ -19,6 +19,7 @@ interface RequestCardProps {
 const RequestCard: React.FC<RequestCardProps> = ({ request, className, showApproveReject = false }) => {
   const [isDialogOpen, setIsDialogOpen] = React.useState(false);
   const { uploadFiles, isUploading, updateStatus } = useDocumentRequests();
+  const isUpdating = updateStatus.isPending;
   
   const handleFilesSelected = (files: File[]) => {
     uploadFiles({ requestId: request.id, files });
@@ -26,12 +27,13 @@ const RequestCard: React.FC<RequestCardProps> = ({ request, className, showAppro
   };
 
   const handleApprove = () => {
-    updateStatus({ requestId: request.id, action: 'Approved' });
+    updateStatus.mutate({ requestId: request.id, action: 'APPROVED', currentStatus: request.status });
   };
 
   const handleReject = () => {
-    updateStatus({ requestId: request.id, action: 'Rejected' });
+    updateStatus.mutate({ requestId: request.id, action: 'PUSH_BACK', currentStatus: request.status });
   };
+
   
   const formatDate = (dateString: string) => {
     try {
@@ -105,7 +107,7 @@ const RequestCard: React.FC<RequestCardProps> = ({ request, className, showAppro
         )}
       </CardContent>
       <CardFooter className="pt-2">
-        {showApproveReject && request.status === 'InReview' ? (
+        {showApproveReject && request.status === 'IN_REVIEW' ? (
           <div className="flex gap-2 w-full">
             <Button 
               variant="outline" 

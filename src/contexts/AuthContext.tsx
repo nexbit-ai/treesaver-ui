@@ -1,4 +1,3 @@
-
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { User } from '@/types';
 import { apiService } from '@/services/api';
@@ -22,9 +21,17 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   useEffect(() => {
     const checkAuth = async () => {
       try {
-        // This would call your auth API endpoint
-        const userData = await apiService.get<User>('/auth/me');
-        setUser(userData);
+        // Temporarily commented out until backend implements this endpoint
+        // const userData = await apiService.get<User>('/auth/me');
+        // setUser(userData);
+        
+        // Set a default user for now
+        setUser({
+          id: '1',
+          email: 'demo@example.com',
+          name: 'Demo User',
+          role: 'user'
+        });
       } catch (error) {
         // If not authenticated, user remains null
         console.error('Auth check failed:', error);
