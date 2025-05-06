@@ -446,35 +446,41 @@ export const apiService = {
       await mockDelay();
       return [
         {
-          id: 'mock-doc-1',
-          name: 'Document 1.pdf',
-          size: 1024 * 1024,
-          uploadedAt: new Date().toISOString(),
-          url: '/files/mock-doc-1.pdf'
+          document_id: 'mock-doc-1',
+          request_id: requestId,
+          document_name: 'Document 1.pdf',
+          aws_location_id: 'requests/mock-doc-1.pdf',
+          file_type: 'application/pdf',
+          file_size: 1024 * 1024,
+          status: '',
+          uploaded_at: new Date().toISOString(),
+          updated_at: new Date().toISOString()
         },
         {
-          id: 'mock-doc-2',
-          name: 'Document 2.pdf',
-          size: 2 * 1024 * 1024,
-          uploadedAt: new Date().toISOString(),
-          url: '/files/mock-doc-2.pdf'
+          document_id: 'mock-doc-2',
+          request_id: requestId,
+          document_name: 'Document 2.pdf',
+          aws_location_id: 'requests/mock-doc-2.pdf',
+          file_type: 'application/pdf',
+          file_size: 2 * 1024 * 1024,
+          status: '',
+          uploaded_at: new Date().toISOString(),
+          updated_at: new Date().toISOString()
         }
       ];
     }
     const response = await fetchApi<Array<{
       document_id: string;
+      request_id: string;
       document_name: string;
+      aws_location_id: string;
+      file_type: string;
       file_size: number;
+      status: string;
       uploaded_at: string;
-      url?: string;
+      updated_at: string;
     }>>(`/v1/client/${requestId}/documents`);
-    return response.map(doc => ({
-      id: doc.document_id,
-      name: doc.document_name,
-      size: doc.file_size,
-      uploadedAt: doc.uploaded_at,
-      url: doc.url
-    }));
+    return response;
   },
 
   // Request Timeline API

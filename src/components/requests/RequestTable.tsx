@@ -24,6 +24,7 @@ import { toast } from 'sonner';
 import { useQueryClient } from '@tanstack/react-query';
 import { Label } from '@/components/ui/label';
 import TestCaseResults, { TestCaseResult } from './TestCaseResults';
+import { Separator } from '@/components/ui/separator';
 
 interface DownloadResponse {
   documentId: string;
@@ -91,7 +92,7 @@ const RequestTable: React.FC<RequestTableProps> = ({ requests, className, showAp
   const [isUploadingState, setIsUploadingState] = useState<Record<string, boolean>>({});
   const [isAnalyzingDocuments, setIsAnalyzingDocuments] = useState<Record<string, boolean>>({});
   const [testResults, setTestResults] = useState<Record<string, any>>({});
-  const [documents, setDocuments] = useState<Record<string, Document[]>>({});
+  const [documents, setDocuments] = useState<Record<string, TimelineDocument[]>>({});
   const [timelineEntries, setTimelineEntries] = useState<Record<string, TimelineEntry[]>>({});
   const [loadingDocuments, setLoadingDocuments] = useState<Set<string>>(new Set());
   const [isLoadingResults, setIsLoadingResults] = useState<Record<string, boolean>>({});
@@ -123,28 +124,27 @@ const RequestTable: React.FC<RequestTableProps> = ({ requests, className, showAp
         newExpandedRows.delete(requestId);
       } else {
         newExpandedRows.add(requestId);
-        // Fetch timeline data if not already loaded
-        if (!timelineEntries[requestId]) {
+        // Fetch documents and timeline data if not already loaded
+        if (!documents[requestId] || !timelineEntries[requestId]) {
           setLoadingDocuments(prev => new Set(prev).add(requestId));
           try {
-            console.log('Fetching timeline for request:', requestId);
+            // Fetch documents
+            const docs = await apiService.getDocuments(requestId);
+            setDocuments(prev => ({ 
+              ...prev, 
+              [requestId]: docs 
+            }));
+
+            // Fetch timeline data
             const timeline = await getRequestTimeline(requestId);
-            console.log('Received timeline data:', timeline);
-            
-            // Ensure we always have an array, even if the API returns null/undefined
             const safeTimeline = Array.isArray(timeline) ? timeline : [];
             setTimelineEntries(prev => ({ 
               ...prev, 
               [requestId]: safeTimeline as TimelineEntry[] 
             }));
           } catch (error) {
-            console.error('Error fetching timeline:', error);
-            toast.error('Failed to load request timeline');
-            // Initialize with empty array to prevent further errors
-            setTimelineEntries(prev => ({ 
-              ...prev, 
-              [requestId]: [] 
-            }));
+            console.error('Error fetching data:', error);
+            toast.error('Failed to load request data');
           } finally {
             setLoadingDocuments(prev => {
               const newSet = new Set(prev);
@@ -204,9 +204,9 @@ const RequestTable: React.FC<RequestTableProps> = ({ requests, className, showAp
       setTestResults(prev => ({ ...prev, [requestId]: results }));
 
       // Refresh documents list
-      const docs = await getDocuments(requestId);
-      setDocuments(prev => ({ ...prev, [requestId]: docs as Document[] }));
-      
+      const docs = await apiService.getDocuments(requestId);
+      setDocuments(prev => ({ ...prev, [requestId]: docs }));
+
       // Invalidate document requests query
       queryClient.invalidateQueries({ queryKey: ['documentRequests'] });
       
@@ -764,64 +764,104 @@ const RequestTable: React.FC<RequestTableProps> = ({ requests, className, showAp
                                 <div className="flex items-center justify-center py-8">
                                   <div className="flex flex-col items-center gap-2">
                                     <Loader2 className="h-8 w-8 animate-spin text-primary" />
-                                    <p className="text-sm text-muted-foreground">Loading timeline...</p>
+                                    <p className="text-sm text-muted-foreground">Loading request data...</p>
                                   </div>
                                 </div>
-                              ) : timelineEntries[request.id] ? (
-                                <div>
-                                  <h4 className="text-base font-medium mb-6">Request Timeline</h4>
-                                  {timelineEntries[request.id].length > 0 ? (
-                                    <div className="space-y-0 ml-2">
-                                      {/* Sort the timeline entries by created_at in ascending order */}
-                                      {[...timelineEntries[request.id]]
-                                        .filter(entry => entry && typeof entry === 'object') // Filter out invalid entries
-                                        .sort((a, b) => {
-                                          try {
-                                            return new Date(a.created_at || 0).getTime() - new Date(b.created_at || 0).getTime();
-                                          } catch (e) {
-                                            return 0;
-                                          }
-                                        })
-                                        .map(entry => (
-                                          <React.Fragment key={entry.id || Math.random().toString()}>
-                                            {renderTimelineEntry(entry)}
-                                          </React.Fragment>
-                                        ))
-                                      }
-                                    </div>
-                                  ) : (
-                                    <div className="flex flex-col items-center justify-center py-8 space-y-2">
-                                      <FileIcon className="h-10 w-10 text-muted-foreground/50" />
-                                      <p className="text-muted-foreground">No timeline entries available for this request.</p>
-                                    </div>
-                                  )}
-                                </div>
                               ) : (
-                                <div className="flex flex-col items-center justify-center py-8 space-y-2">
-                                  <FileIcon className="h-10 w-10 text-muted-foreground/50" />
-                                  <p className="text-muted-foreground">No timeline data available for this request.</p>
+                                <div className="space-y-6">
+                                  {/* Documents Section */}
+                                  <div>
+                                    <h3 className="text-lg font-medium mb-4">Documents</h3>
+                                    {documents[request.id] && documents[request.id].length > 0 ? (
+                                      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                                        {documents[request.id].map((doc) => (
+                                          <div 
+                                            key={doc.document_id}
+                                            className="flex items-start p-3 rounded-lg bg-background border hover:border-primary/50 transition-colors"
+                                          >
+                                            <div className="w-10 h-10 rounded bg-muted flex items-center justify-center shrink-0">
+                                              <FileIcon className="w-5 h-5 text-foreground/70" />
+                                            </div>
+                                            <div className="ml-3 min-w-0 flex-grow">
+                                              <p className="text-sm font-medium truncate" title={doc.document_name}>
+                                                {doc.document_name}
+                                              </p>
+                                              <div className="flex justify-between items-center">
+                                                <p className="text-xs text-muted-foreground">
+                                                  {doc.file_size ? `${(doc.file_size / (1024 * 1024)).toFixed(1)} MB` : 'Size unknown'}
+                                                </p>
+                                                <Button 
+                                                  variant="ghost" 
+                                                  size="sm" 
+                                                  className="px-2 h-7 text-xs hover:bg-accent"
+                                                  onClick={() => handleDownload(doc.document_id)}
+                                                >
+                                                  <Download className="w-3 h-3 mr-1" />
+                                                  Download
+                                                </Button>
+                                              </div>
+                                            </div>
+                                          </div>
+                                        ))}
+                                      </div>
+                                    ) : (
+                                      <div className="text-center py-8 bg-muted/30 rounded-lg border border-dashed">
+                                        <div className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-muted mb-4">
+                                          <FileIcon className="h-6 w-6 text-muted-foreground" />
+                                        </div>
+                                        <h3 className="text-lg font-medium">No documents found</h3>
+                                        <p className="text-muted-foreground mt-1">
+                                          Upload documents using the button below.
+                                        </p>
+                                      </div>
+                                    )}
+                                  </div>
+
+                                  <Separator className="my-6" />
+
+                                  {/* Timeline Section */}
+                                  <div>
+                                    <h3 className="text-lg font-medium mb-4">Timeline</h3>
+                                    {timelineEntries[request.id] && timelineEntries[request.id].length > 0 ? (
+                                      <div className="space-y-4">
+                                        {timelineEntries[request.id].map((entry) => renderTimelineEntry(entry))}
+                                      </div>
+                                    ) : (
+                                      <div className="text-center py-8 bg-muted/30 rounded-lg border border-dashed">
+                                        <div className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-muted mb-4">
+                                          <Clock className="h-6 w-6 text-muted-foreground" />
+                                        </div>
+                                        <h3 className="text-lg font-medium">No timeline data</h3>
+                                        <p className="text-muted-foreground mt-1">
+                                          Timeline will be updated as the request progresses.
+                                        </p>
+                                      </div>
+                                    )}
+                                  </div>
+
+                                  {/* Upload Button */}
+                                  <div className="flex justify-end mt-8">
+                                    <Dialog>
+                                      <DialogTrigger asChild>
+                                        <Button>
+                                          <Upload className="h-4 w-4 mr-2" />
+                                          Upload Documents
+                                        </Button>
+                                      </DialogTrigger>
+                                      <DialogContent className="max-w-2xl">
+                                        <DialogHeader>
+                                          <DialogTitle>{request.title}</DialogTitle>
+                                        </DialogHeader>
+                                        <FileUploader 
+                                          onFilesSelected={(files) => handleFilesSelected(files, request.id)} 
+                                          requestId={request.id}
+                                          isUploading={isUploadingState[request.id]}
+                                        />
+                                      </DialogContent>
+                                    </Dialog>
+                                  </div>
                                 </div>
                               )}
-                              
-                              <div className="flex justify-end mt-8">
-                                <Dialog>
-                                  <DialogTrigger asChild>
-                                    <Button>
-                                      <Upload className="h-4 w-4 mr-2" />
-                                      Upload Documents
-                                    </Button>
-                                  </DialogTrigger>
-                                  <DialogContent className="max-w-2xl">
-                                    <DialogHeader>
-                                      <DialogTitle>{request.title}</DialogTitle>
-                                    </DialogHeader>
-                                    <FileUploader 
-                                      onFilesSelected={(files) => handleFilesSelected(files, request.id)} 
-                                      requestId={request.id}
-                                    />
-                                  </DialogContent>
-                                </Dialog>
-                              </div>
                             </div>
                           )}
                         </div>
