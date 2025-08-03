@@ -12,7 +12,7 @@ const Index = () => {
       <div className="text-center max-w-2xl px-4">
         <h1 className="text-4xl font-bold mb-4">Audit PBC Tool</h1>
         <p className="text-xl text-muted-foreground mb-8">
-          Streamlining document requests between CPAs and clients
+          Streamlining document requests between CAs and clients
         </p>
         
         <div className="grid gap-4 md:grid-cols-2 mt-8">
